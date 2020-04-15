@@ -1,7 +1,4 @@
-from tkinter import messagebox
-import tkinter
-from tkinter import *
-
+#!/usr/bin/env python3
 
 def get_parenthesis_index(chemical):
     global closing_index
@@ -15,7 +12,7 @@ def get_parenthesis_index(chemical):
             closing_index.append(index)
     # print(f'opening: {opening_index}\nclosing: {closing_index}')
     #
-    # print(f'This is the chemical: {chemical}')
+    # print(f'This is the chemical: {chemical}')new
 
 
 def check_in_parenthesis_count(chemical, closing_index):
@@ -156,67 +153,6 @@ def get_molecular_mass(molecule):
     return cummulative_mol_mass
 
 
-# get_molecular_mass('H3(PO4)2')
-
-def check_for_entry(ent):
-    if not ent:
-        messagebox.showwarning('Warning', 'You need to imput something :)')
-
-
-def give_result():
-    try:
-        ent = entry1.get()
-        total = get_molecular_mass(ent)
-        label2['text'] = str(total) + 'g/mol'
-    except:
-        check_for_entry(entry1.get())
-
-
-def give_results():
-    try:
-        ent = entry1.get()
-        ent2 = float(entry_counts.get())
-        total = get_molecular_mass(ent)
-        result_mult['text'] = str(round(total*ent2, 2)) + 'g/mol'
-    except:
-        try:
-            check_for_entry(entry1.get())
-        except:
-            check_for_entry(entry_counts.get())
-
-
-window = Tk()
-proportion = 100
-window.title('Predro Molecular mass calculator')
-window.columnconfigure([0, 2], weight=0, minsize=proportion)
-window.columnconfigure([1, 3], weight=0, minsize=proportion/2)
-# window.rowconfigure([0], weight=0, minsize=proportion/2)
-window.rowconfigure([1], weight=0, minsize=proportion)
-frame_above = Frame(window)
-frame_above.grid(columnspan=3, column=0, row=0)
-introduction = Label(frame_above, text='Wellcome to the molecular mass calculator\nInput a simple molecular formula where all numbers have 1 digit')
-introduction.grid(column=0, row=0, columnspan=4)
-
-label1 = Label(window, text='Simplified molecular formula')
-label1.grid(column=0, row=1)
-entry1 = Entry(window)
-entry1.grid(column=1, row=1)
-
-button1 = Button(window, text='Calc', command=give_result)
-button1.grid(column=2, row=1)
-label2 = Label(window, text='')
-label2.grid(column=3, row=1)
-
-button2 = Button(window, text='Calc', command=give_results)
-button2.grid(column=2, row=3)
-
-label_counts = Label(window, text='Amount of this molecule')
-label_counts.grid(column=0, row=3)
-
-entry_counts = Entry(window)
-entry_counts.grid(column=1, row=3)
-
-result_mult = Label(window, text='')
-result_mult.grid(column=3, row=3)
-
-window.mainloop()
+if __name__ == "__main__":
+    # test:
+    print(get_molecular_mass('H3(PO4)2'))
