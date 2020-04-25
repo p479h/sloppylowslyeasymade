@@ -1,11 +1,34 @@
-import Functions_with_concentrations as concentrations
-import Improved_Unit_converter as improved
-import Unit_converter as open_converter
-import os
-from tkinter import messagebox
+"""
+This app allows you to calculate the molar mass of molecules where the numbers go up to 2 beggining_of_double_digits
+Have fun using it in the lab!
+
+----------------------------------
+Each section has a function, and they are separated by ###########
+
+---------------------------------
+Now, go explore!
+"""
+
 import tkinter as tk
+from tkinter import messagebox
 from PIL import Image
 from PIL import ImageTk
+import os
+directory = os.getcwd() + r'\Benzenechemapp.PNG'
+
+
+class back_ground(tk.Canvas):
+    """This part of the code creates the background of the program"""
+
+    def __init__(self, master=None, **kwargs):
+        proportion = 100
+        super().__init__(master, **kwargs)
+        w = int(proportion*1.2)*5
+        h = proportion*4
+        self.image = Image.open(directory).resize((w, h), Image.ANTIALIAS)
+        self.image = ImageTk.PhotoImage(self.image)
+        master.geometry(f"{w}x{h}+0+0")
+        frame_background = tk.Label(master, image=self.image).place(x=0, y=0)
 
 
 def check_indexes(chemical):
@@ -88,13 +111,6 @@ def check_in_parenthesis_count(chemical, close_index):  # This is the new improv
         else:
             print('Problem with indexing')
     return ammount_in_parenthesis
-
-
-# so far we have defined: upper_index:Chemical index upper, lower_index: Chemical index lower, open_index: Chemical index (, close_index: Chemical index )
-# number_index: Chemical index of numbers, beggining_of_double_digits: Chemical index of begginings of double digits, beggining_of_double_lowers
-# list_of_parenthesis: List of the stuff inside parenthesis in chemical
-
-# For this next function I need the outputs of the others
 
 
 def get_word_no_parenthesis(chemical, open_index, close_index, upper_index, number_index, beggining_of_double_digits):
@@ -306,104 +322,14 @@ def get_molecular_mass(chemical):
     return round(cummulative_mass, 2)
 
 
-"""This document contains the app that gives moleculas mass from molecular formula
-it requires Improved_functions_to_get_molar_mass to be in the same directory."""
-
-
-class GUI(tk.Frame):
-    """This class contains the frame that contrains all the buttons of the application
-    This application gives molecular mass from molecular formula."""
-    proportion = 100
-    units = 'g/mol'
-
-    def __init__(self, master=None, **kwargs):
-        super().__init__(master, **kwargs)
-
-        proportion = 100
-        self.columnconfigure([0, 2], weight=0, minsize=proportion)
-        self.columnconfigure([1, 3], weight=0, minsize=proportion/2)
-        self.rowconfigure([1], weight=0, minsize=proportion)
-
-        introduction = tk.Label(self, text='Wellcome to the molecular mass calculator\nInput a simple molecular formula with digit numbers')
-        introduction.grid(column=0, row=0, columnspan=3, sticky='w')
-
-        label1 = tk.Label(self, text='Simplified molecular formula:')
-        label1.grid(column=0, row=1)
-        self.entry1 = tk.Entry(self)
-        self.entry1.grid(column=1, row=1)
-
-        button1 = tk.Button(self, text='Calc', command=self.give_result)
-        button1.grid(column=2, row=1)
-        self.label2 = tk.Label(self, text='')
-        self.label2.grid(column=3, row=1)
-
-        button2 = tk.Button(self, text='Calc', command=self.give_results)
-        button2.grid(column=2, row=3)
-
-        label_counts = tk.Label(self, text='Amount of this molecule:')
-        label_counts.grid(column=0, row=3)
-
-        self.entry_counts = tk.Entry(self)
-        self.entry_counts.grid(column=1, row=3)
-
-        self.result_mult = tk.Label(self, text='')
-        self.result_mult.grid(column=3, row=3)
-
-        test_label = tk.Button(self, text='Press me\nTo change\nunits', command=self.change_units)
-        test_label.place(x=370, y=1)
-        # test_label.bind('<Button-1>', self.change_units)
-
-    def check_for_entry(self, ent):
-        if not ent:
-            messagebox.showwarning('Warning', 'You need to imput something :)')
-
-    def give_result(self):
-        """Gives result of computation of molecular mass using the moleculas formula from the entry1"""
-        try:
-            ent = self.entry1.get()
-            total = get_molecular_mass(ent)
-            if GUI.units == 'g/mol':
-                self.label2['text'] = str(total) + ' '+GUI.units
-            else:
-                self.label2['text'] = str(total/1000) + ' '+GUI.units
-        except:
-            self.check_for_entry(self.entry1.get())
-
-    def give_results(self):
-        """This function displays the results in the GUI interface"""
-        try:
-            ent = self.entry1.get()
-            ent2 = float(self.entry_counts.get())
-            total = get_molecular_mass(ent)
-            if GUI.units == 'g/mol':
-                self.result_mult['text'] = str(round(total*ent2, 2)) + ' ' + GUI.units
-            else:
-                self.result_mult['text'] = str(round(total*ent2/1000, 6)) + ' ' + GUI.units
-        except:
-            try:
-                self.check_for_entry(self.entry1.get())
-            except:
-                self.check_for_entry(self.entry_counts.get())
-
-    def change_units(self):
-        """This function changes the units of the output using inputs"""
-        if GUI.units == 'g/mol':
-            GUI.units = 'kg/mol'
-            messagebox.showinfo('JK', f'This is still experimental. \nYour new units are: {GUI.units}')
-        else:
-            GUI.units = 'g/mol'
-            messagebox.showinfo('JK', f'This is still experimental. \nYour new units are: {GUI.units}')
-
-
-def main1():
-    root = tk.Tk()
-    root.geometry('500x300')
-    root.title('Predro Molecular mass calculator')
-    window = GUI(master=root)
-    window.place(x=10, y=10)
-    root.mainloop()
-
-# Need Chemical, final volume, final concentration
+##########################################################################################################
+##########################################################################################################
+##########################################################################################################
+##########################################################################################################
+##########################################################################################################
+##########################################################################################################
+##########################################################################################################
+##########################################################################################################
 
 
 class concentration_frame(tk.Frame):
@@ -519,37 +445,143 @@ class concentration_frame(tk.Frame):
             messagebox.showwarning('You messed up', 'As you just read:\nYou messed up.\nPlease imput numbers that make sense')
 
 
-def main2():
+def main_concentration():
     """This function creates the initial window"""
     window = tk.Tk()
-    window.geometry('500x300')
-    window.title('Life can be easy :)')
+    window.title('Having fun yet? :)')
+    picture = back_ground(window)
+    picture.pack()
     frame = concentration_frame(window)
     frame.place(x=0, y=0)
     window.mainloop()
 
 
-# help(concentration_frame.find_ammounts_chemical)
+##########################################################################################################
+##########################################################################################################
+##########################################################################################################
+###########################################################################################################
+##########################################################################################################
+##########################################################################################################
+##########################################################################################################
 
+"""This document contains the app that gives moleculas mass from molecular formula
+it requires Improved_functions_to_get_molar_mass to be in the same directory."""
+
+
+class GUI(tk.Frame):
+    """This class contains the frame that contrains all the buttons of the application
+    This application gives molecular mass from molecular formula."""
+    proportion = 100
+    units = 'g/mol'
+
+    def __init__(self, master=None, **kwargs):
+        super().__init__(master, **kwargs)
+
+        proportion = 100
+        self.columnconfigure([0, 2], weight=0, minsize=proportion)
+        self.columnconfigure([1, 3], weight=0, minsize=proportion/2)
+        self.rowconfigure([1], weight=0, minsize=proportion)
+
+        introduction = tk.Label(self, text='Wellcome to the molecular mass calculator\nInput a simple molecular formula with digit numbers')
+        introduction.grid(column=0, row=0, columnspan=3, sticky='w')
+
+        label1 = tk.Label(self, text='Simplified molecular formula:')
+        label1.grid(column=0, row=1)
+        self.entry1 = tk.Entry(self)
+        self.entry1.grid(column=1, row=1)
+
+        button1 = tk.Button(self, text='Calc', command=self.give_result)
+        button1.grid(column=2, row=1)
+        self.label2 = tk.Label(self, text='')
+        self.label2.grid(column=3, row=1)
+
+        button2 = tk.Button(self, text='Calc', command=self.give_results)
+        button2.grid(column=2, row=3)
+
+        label_counts = tk.Label(self, text='Amount of this molecule:')
+        label_counts.grid(column=0, row=3)
+
+        self.entry_counts = tk.Entry(self)
+        self.entry_counts.grid(column=1, row=3)
+
+        self.result_mult = tk.Label(self, text='')
+        self.result_mult.grid(column=3, row=3)
+
+        test_label = tk.Button(self, text='Press me\nTo change\nunits', command=self.change_units)
+        test_label.place(x=370, y=1)
+        # test_label.bind('<Button-1>', self.change_units)
+
+    def check_for_entry(self, ent):
+        if not ent:
+            messagebox.showwarning('Warning', 'You need to imput something :)')
+
+    def give_result(self):
+        """Gives result of computation of molecular mass using the moleculas formula from the entry1"""
+        try:
+            ent = self.entry1.get()
+            total = get_molecular_mass(ent)
+            if GUI.units == 'g/mol':
+                self.label2['text'] = str(total) + ' '+GUI.units
+            else:
+                self.label2['text'] = str(total/1000) + ' '+GUI.units
+        except:
+            self.check_for_entry(self.entry1.get())
+
+    def give_results(self):
+        """This function displays the results in the GUI interface"""
+        try:
+            ent = self.entry1.get()
+            ent2 = float(self.entry_counts.get())
+            total = get_molecular_mass(ent)
+            if GUI.units == 'g/mol':
+                self.result_mult['text'] = str(round(total*ent2, 2)) + ' ' + GUI.units
+            else:
+                self.result_mult['text'] = str(round(total*ent2/1000, 6)) + ' ' + GUI.units
+        except:
+            try:
+                self.check_for_entry(self.entry1.get())
+            except:
+                self.check_for_entry(self.entry_counts.get())
+
+    def change_units(self):
+        """This function changes the units of the output using inputs"""
+        if GUI.units == 'g/mol':
+            GUI.units = 'kg/mol'
+            messagebox.showinfo('JK', f'This is still experimental. \nYour new units are: {GUI.units}')
+        else:
+            GUI.units = 'g/mol'
+            messagebox.showinfo('JK', f'This is still experimental. \nYour new units are: {GUI.units}')
+
+
+def main():
+    root = tk.Tk()
+    root.title('Predro Molecular mass calculator')
+    picture = back_ground(root)
+    picture.pack()
+    window = GUI(master=root)
+    window.place(x=10, y=10)
+    root.mainloop()
+
+
+##########################################################################################################
+##########################################################################################################
+##########################################################################################################
+################################################################################################################
+##########################################################################################################
+##########################################################################################################
+##########################################################################################################
 
 class Opening(tk.Frame):
     """This class contains the buttons that can take you to another app"""
 
     def __init__(self, master=None, **kwargs):
         super().__init__(master, **kwargs)
+        self.configure(bg='blue')
 
-        button_open_converter = tk.Button(self, text='Calculate molar mass from molecule', command=self.open_converter)
-        button_open_converter.pack()
         button_open_converter_improved = tk.Button(self, text='Calculate molar mass from molecule-BETA', command=self.open_improved_converter)
         button_open_converter_improved.pack()
         button_open_making_solution_helper = tk.Button(self, text='Get the ammounts needed for solution', command=self.open_concentrations)
         button_open_making_solution_helper.pack()
-
-    @staticmethod
-    def open_converter():
-        global to_open
-        to_open = 'open_converter'
-        window.destroy()
 
     @staticmethod
     def open_improved_converter():
@@ -567,17 +599,17 @@ class Opening(tk.Frame):
 """The next part, when run, opens the opnening page and from there, the subsequent pages."""
 
 window = tk.Tk()
-window.geometry('500x300')
+picture = back_ground(window)
+picture.pack()
+window.title('The best app ever :)')
 Initial_frame = Opening(window)
 Initial_frame.place(x=0, y=0)
 window.mainloop()
 
 try:
-    if to_open == 'open_converter':
-        main1()
-    elif to_open == 'open_improved_converter':
-        main1()
+    if to_open == 'open_improved_converter':
+        main()
     elif to_open == 'open_concentrations':
-        main2()
+        main_concentration()
 except:
     print('Too bad you did not press any buttons :(')
