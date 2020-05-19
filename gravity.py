@@ -1,5 +1,5 @@
 """
-    Simulating nature... Trying at least...
+    gravity.py in 3d
     """
 from matplotlib.animation import FuncAnimation
 import matplotlib as mpl
@@ -9,28 +9,61 @@ import mpl_toolkits.mplot3d.axes3d as p3
 
 
 class Physics:
-    """Physics was created as a class, because I want physical laws to be mutable!
-    Imagine being able to have a glimpse of what the universe would be like if
-    the fundamental forces of nature behaved differently!
-    Functions defined here will represent physical laws and suport for visuals.
-    IN the future, there will be support for charged particles.
+    """Class that controls physical laws and visualization
 
-    Parameters
-    ----------
-    *Parameters will be described here.
+    Atributes
+    ---------
+        create an instance called "instance"
+        run: print(instance.__dict__)
 
-    Methods
-    -------
-    *Methods will be described here
-    """
+    Output
+    ------
+        A physics instance. Analogous to a "universe".
+        Planet objects take "universes" as arguments.
+        The properties of this "universe" determine how
+        Planet instances will interact.
+        """
+    instances = []
 
-    def __init__(self, origin=None, universe_dimensions=150, t_0=0, t=0, dt=0.1, num_dims=2, t_b=False,
-                 stars=False, category="universe"):
+    def __init__(self, origin=None, universe_dimensions=150, t=0, dt=0.1,
+                 num_dims=2, t_b=False, stars=False, category="universe"):
+        """
+        Parameters
+        ----------
+            origin: np.array, optional
+                Origin of the Physics instance
+                (default  = 0)
+
+            universe_dimensions: int, float
+                Side length of Physics instance if imagined as a cube
+                (default  = 150)
+
+            t: int, float
+                Current time
+                (default  = 0)
+
+            dt: int, float
+                Time step taken when evaluating changes in instances
+                (default  = 0.1)
+
+            num_dims: int
+                Number of physical dimensions in the system (2 or 3)
+                (default  = 2)
+
+            t_b: bool
+                Show time in plot? (default  = False)
+
+            stars: bool
+                Show stars in plot? (default  = False)
+
+            category: str
+                Changes the name of the plot
+                {"universe": "x world", "subatomic": "x particles",
+                other: "x creation"}. x = "Predru's """
         self.origin = origin if origin else np.array([0 for x in range(num_dims)])  # (m, m)
         self.universe_dimensions = [(-universe_dimensions, universe_dimensions)
                                     for dimension in range(num_dims)]  # m This is the lengths of -+ xyz axes
         self.num_dims = num_dims
-        self.t_0 = t_0  # s
         self.t = t  # s
         self.dt = dt  # s
         self.G_cons = 6.674*1e-11  # m3 kg-1 s-2
@@ -59,10 +92,19 @@ class Physics:
         self.ax.set_title(text_setter, color=c, fontdict={'fontname': "monospace"})
         self.make_buttons()
         self.make_stars() if stars else None  # makes stars
+        Physics.instances.append(self)
 
     def g_force(self, object_self, object_other):
-        """object_self feels the force, object_other applies force
-        RETURNS THE FORCE OF OTHER ON SELF"""
+        """
+        Parameters
+        ----------
+            object_self = object with mass and position.
+            object_other = object with mass and position.
+        Output
+        ------
+            The net gravitational pull of object_other on object_self
+            as a vecor/np.ndarray.
+        """
         r = object_other.position - object_self.position
         IrI = np.sqrt(sum(r**2))
         if object_self.shape == "sphere" and object_other.shape == "sphere":
@@ -75,24 +117,45 @@ class Physics:
         return forces
 
     def m_force(self, object_self, object_other):
-        """WHEN COMPLETED IT WILL FIND THE MAGENTIC FORCES"""
+        """
+        Parameters
+        ----------
+            object_self = object with charge and position.
+            object_other = object with charge and position.
+        Output
+        ------
+            The net electric pull of object_other on object_self
+            as a vecor/np.ndarray."""
         if object_self.charge == None or object_other.charge == None:
             return self.origin * 0
-        elif (object_other.charge == 1 or object_other.charge == -1) and (object_self.charge == 1 or
-                                                                          object_self.charge == -1):
-            forces = self.g_force(object_self, object_other)  # uses the set up of the gravitational forces.
-            forces = forces*self.C_cons/self.G_cons/object_other.mass/object_self.mass
+
+        elif (object_other.charge == 1 or object_other.charge == -1) and \
+                (object_self.charge == 1 or object_self.charge == -1):
+
+            r = object_other.position - object_self.position
+            IrI = np.sqrt(sum(r**2))
+
             prdct_of_charges = object_other.total_charge*object_self.total_charge
-            forces = forces*prdct_of_charges*-1  # nEnsures the direction of the force comes out right
+            forces = self.C_cons*prdct_of_charges*r/IrI**3
+            forces = forces*-1  # nEnsures the direction of the force comes out right
             return forces
         else:
             print("You made a mistake somewhere")
             return self.origin * 0
 
     def update_velocity(self, object, forces):
-        """receives np.array([f_x, f_y, f_z])
-            uses it to calculate change in velocity
-            after dt seconds.
+        """
+        Parameters
+        ----------
+            object = object with mass and position.
+            forces = vector/ndarray with net forces on object.
+        Sets
+        ----
+            object.velocity = forces/object.mass*dt + object.velocity
+
+        Output
+        ------
+            New object's velocity as a vector/ndarray.
             """
         dt = self.dt
         dps = forces*dt  # Changes in momentum
@@ -106,7 +169,7 @@ class Physics:
         self.fig.canvas.flush_events()
 
     def make_buttons(self):
-        """Creates button that starts the animation"""
+        """Creates buttons that help with the interaction"""
         self.button_axes = []
         self.fig2 = plt.figure(figsize=(3, 2))
         ax1 = self.fig2.add_axes([0.1, 0.6, 0.4, 0.3], label="ax1")
@@ -132,8 +195,17 @@ class Physics:
         slider.on_changed(self.update_dt)
         self.slider = slider
 
+        button = mpl.widgets.Button(ax3, "Exit")
+        button.on_clicked(self.close)
+        self.close_button = button
+
+    def close(self, press):
+        "Closes the plots"
+        plt.close("all")
+
     def replay(self, click):
-        for planet in Planet.planets:
+        """Returns all Planet instances in the plot to their starting position and velocity"""
+        for planet in Planet.instances:
             planet.position = planet.initial_position
             planet.velocity = planet.initial_v
             # The map does not update correctly for some reason
@@ -143,10 +215,11 @@ class Physics:
         self.dt = val
 
     def evolve_system(self):
-        """Lets the position of the planets change"""
-        for pl in Planet.planets:  # Updates velocities of all planets
+        """Checks for all the physical changes that occur to all the Planet instances
+            under self dictating physical properties and updates the plot afterwards"""
+        for pl in Planet.instances:  # Updates velocities of all planets
             pl.update_velocity()
-        for pl in Planet.planets:  # Applies change in location after dt seconds
+        for pl in Planet.instances:  # Applies change in location after dt seconds
             pl.position = pl.position + pl.velocity*self.dt
             pl.update_ring_location()
             pl.data = np.c_[pl.position[0], pl.position[1]]
@@ -163,25 +236,42 @@ class Physics:
         # Here the 3d stuff will come
 
     def play(self, button_press):
-        """Plays 2000 dt period"""
+        """Plays 2000 dt evolve_system() cycles"""
         for x in range(2000):
-            self.evolve_system()
-            if self.num_dims == 2:
-                self.update_2d_axes()
-            else:
-                self.update_3d_axes()
+            try:
+                self.evolve_system()
+                if self.num_dims == 2:
+                    self.update_2d_axes()
+                else:
+                    self.update_3d_axes()
+            except:
+                break
 
     def update_3d_axes(self):
         self.update_2d_axes()
 
     def record(self, frame):
-        """Function used for FuncAnimation"""
+        """Function goes inside FuncAnimation when making animation"""
         self.evolve_system()
         print(frame)
-        return [pl.scatt for pl in Planet.planets]
+        return [pl.scatt for pl in Planet.instances]
 
     def record_gif(self, name_gif='gravity_3d.gif', frames=100, fps=40, repeat=False):
-        """Saves the gif without need for looking up functions"""
+        """
+        Parameters
+        ----------
+            name_gif: str -> Name of the gif you wish to save
+                (default = "gravity_3d.gif")
+            frames: int -> length of gif in frames
+                (default = 100)
+            fps: int -> Frames per second
+                (default = 40)
+            repeat: bool
+                No idea what it does. (default = False)
+        Output
+        ------
+            gif named "name_gif" is created in current directory
+            """
         ani = FuncAnimation(self.fig, self.record, repeat=repeat,
                             frames=frames, blit=True, interval=1)
         writergif = mpl.animation.PillowWriter(fps=fps)
@@ -189,8 +279,9 @@ class Physics:
         print("Completed!")
 
     def make_stars(self):
-        "makes stars for plot"
-        data = [np.random.randint(low=self.universe_dimensions[0][0]*2, high=self.universe_dimensions[0][1]*2, size=45) for x in range(3)]
+        "Adds stars to Physics instance.ax"
+        data = [np.random.randint(low=self.universe_dimensions[0][0]*2,
+                                  high=self.universe_dimensions[0][1]*2, size=45) for x in range(3)]
         x, y, z = [data[i] for i in range(3)]
         s = np.random.randint(1, 10, 45)
         if self.num_dims == 3:
@@ -199,30 +290,104 @@ class Physics:
             self.stars = self.ax.scatter(x, y, c='white', alpha=0.8, marker="*", s=s)
 
     def make_n_objects(self, number, clas, rings=False, charge=False):
-        """makes n planet
-        universe.make_n_objects(10, Planet)"""
+        """Creates number instances of clas. (Designed for Planet).
+        Parameters
+        ----------
+            number: int
+            clas: class (current app supports only Planet)
+            rings: Gets passed to Planet. Giving it a chance of 30% of getting a ring.
+            Charge: Gets passed to Planet. Giving it a chance of 30% of getting a charge.
+        """
         for x in range(number):
             f = clas.random__init__(self, rings=rings, charge=charge)
 
 
 class Planet:
-    """Class refers to planets, but a more appropriate name
-    would be particle as I plan on adding support for charges."""
-    planets = []  # List of Planet instances
+    """ Creates a particle
+
+    Atributes
+    ---------
+        universe: Physics object -> Determines physical properties(default = Physics())
+
+        shape: str -> Does not do much yet.(default = "sphere")
+
+        charge: int == +-1 -> Gives + or - charge type to object.(default = None)
+
+        charge_density: int, float -> Units: C m-3 (default = 1)
+
+        total_charge: charge_density*volume -> Units: C
+
+        dimensions: int, float -> Radius -> Units: m (default = 1)
+
+        volume = 4/3 * 3.14 * radius**3 -> Units = m3
+
+        density: int, float -> Mass density -> Units: kg/m3 (default = 1)
+
+        mass = volume*density -> Units: kg
+
+        initial_v: np.ndarray -> Initial velocity of the object as a vector
+            [x, y] or [x, y, z] for 2, 3 dimensions respectively.
+            (default = np.array([0, 0]) or np.array([0, 0, 0]))
+
+        velocity: current velocity of the object as ndarray
+
+        initial_position: np.ndarray -> Initial position of object given as vector
+            [x, y] or [x, y, z] for 2, 3 dimensions.
+            (default = np.array([0, 0]) or np.array([0, 0, 0]))
+
+        position: current position of object as ndarray
+
+        ring: bool -> If the planet has a ring.(default = False)
+
+        category: str -> What king of object it is(e.g. Planet, Star...) (default = "planet")
+
+        scatt: mpl.canvas instance (The actuall points on graph)
+
+        data: Nx2 or Nx3 list used when updating the visuals between dt cycles.
+
+    Output
+    ------
+        Instance of Planet
+        """
+    instances = []  # List of Planet instances
 
     def __init__(self, shape="sphere", radius=1, density=10,
                  initial_position=None, initial_v=None, charge=None,
                  universe=None, ring=False, charge_density=1, category="planet"):
         """
-            Planet characteristics. Universe is a Physics instance
-            shape is a string
-            dimensions is the radius, but only for spheres(future_update for qudrlaterals)
-            density is a float or integer
-            initial position is a set of coordnates such as (x, y, z)
-            charge has no function yet
-            initial_v is initial velocity
-            charge = +-1!!!! Charge density comes in Cm-3
-            WATCH OUT FOR THE NUMBER OF DIMESIONS. Should match with universe!
+        Parameters
+        ----------
+            universe: Physics object -> Determines physical properties
+                (default = Physics())
+
+            shape: str -> Does not do much yet.
+                (default = "sphere")
+
+            charge: int == +-1 -> Gives + or - charge type to object.
+                (default = None)
+
+            charge_density: int, float -> Units: C m-3
+                (default = 1)
+
+            dimensions: int, float -> Radius -> Units: m
+                (default = 1)
+
+            density: int, float -> Mass density -> Units: kg/m3
+                (default = 1)
+
+            initial_v: np.ndarray, list, tupple -> Initial velocity of the object as a vector
+                [x, y] or [x, y, z] for 2, 3 dimensions respectively.
+                (default = np.array([0, 0]) or np.array([0, 0, 0]))
+
+            initial_position: np.ndarray, list, tupple -> Initial position of object given as vector
+                [x, y] or [x, y, z] for 2, 3 dimensions.
+                (default = np.array([0, 0]) or np.array([0, 0, 0]))
+
+            ring: bool -> If the planet has a ring.
+                (default = False)
+
+            category: str -> What king of object it is(e.g. Planet, Star...)
+                (default = "planet")
             """
         self.universe = universe
         self.shape = shape
@@ -236,18 +401,21 @@ class Planet:
             self.total_charge = charge*charge_density*4/3*3.14*radius**3
         else:
             self.total_charge = None
-        if type(initial_position) == tuple:
+
+        if type(initial_position) == tuple or type(initial_position) == list:
             initial_position = np.array(initial_position)
         elif type(initial_position) == np.ndarray:
             initial_position = initial_position
         else:
             initial_position = self.universe.origin
-        if type(initial_v) == tuple:
+
+        if type(initial_v) == tuple or type(initial_v) == list:
             initial_v = np.array(initial_v)
         elif type(initial_v) == np.ndarray:
             initial_v = initial_v
         else:
             initial_v = self.universe.origin
+
         self.velocity = initial_v
         self.initial_v = initial_v
         self.initial_position = initial_position
@@ -267,9 +435,10 @@ class Planet:
                 self.scatt = plot[1].scatter(datas[0], datas[1], datas[2],
                                              s=self.dimensions**3, alpha=0.95, c="yellow")
 
-        Planet.planets.append(self)
+        Planet.instances.append(self)
 
     def make_ring(self):
+        "Makes a ring around self of using multiple points and pyploy.scatter"
         r = self.dimensions*6
         r = r/1.6 if self.universe.num_dims == 2 else r
         self.t_ring = t = np.arange(0, np.pi * 2.0, 0.01)
@@ -303,8 +472,8 @@ class Planet:
             pass
 
     def find_g_forces(self):
-        """Calculates net gravitational pull from all other planets
-        returns them as a numpy array (f_x, f_y, f_i,...)"""
+        """Uses function of physics instance to obtain net force on self
+        outputs this net force as a ndarray."""
         planetsF = self.get_other_planets()  # Forces of other planets on itself.
         forces = np.array([0 for x in range(self.universe.num_dims)])
         for planet in planetsF:  # Finds the overal forces when all planets are considered.
@@ -325,7 +494,7 @@ class Planet:
     def get_other_planets(self):
         """Returns list with all planets that might
         be applying forces on the planet being observed"""
-        index, lis = Planet.planets.index(self), Planet.planets.copy()
+        index, lis = Planet.instances.index(self), Planet.instances.copy()
         lis.pop(index)
         return lis
 
@@ -337,14 +506,15 @@ class Planet:
         self.check_boundery()
 
     def check_boundery(self):
-        """Does not allow particles to be lost because they escaped the figure"""
+        """Reflects particle's getting out of universe's "volume" """
         for index, value in enumerate(self.position):
             if abs(value) >= self.universe.universe_dimensions[0][1]*4:
                 self.velocity[index] = -self.velocity[index]
 
     @staticmethod
     def random__init__(universe, rings=False, charge=None):
-        """Creates randomized planet"""
+        """Creates randomized planet on using universe as template for physics
+        Outputs a Planet instance"""
         generate = np.random.uniform
         max = universe.universe_dimensions[0][1]*0.7
         zi = universe.num_dims
@@ -360,7 +530,8 @@ class Planet:
                       ring=ans, charge=charge)
 
     def set_v_orbit(self, sun):
-        """sets planet's orbit around it's sun!"""
+        """sets planet's orbit around it's sun!
+        This is done by changing their initial position and velocity"""
         d = self.position - sun.position
         d = np.sqrt(sum(d**2))
         g = self.universe.G_cons
@@ -402,6 +573,7 @@ class Planet:
 def make_solar_system(num_dims=2, dt=0.1, universe_dimensions=250, t_b=True,
                       stars=True, sun_density=1e12, sun_radius=10, n_planets=10,
                       rand_orbits=True, show=True, save=False, rings=False, charge=False):
+    """Just makes it easier to create a working simulation for testing."""
     universe = Physics(num_dims=num_dims, dt=dt, universe_dimensions=universe_dimensions,
                        t_b=t_b, stars=stars)
     earth = Planet(universe=universe, density=sun_density, radius=sun_radius,
@@ -412,18 +584,24 @@ def make_solar_system(num_dims=2, dt=0.1, universe_dimensions=250, t_b=True,
         plt.show()
     if save == True:
         universe.record_gif(name_gif='gravity_3d_new.gif', frames=1000, fps=35, repeat=False)
+    print([x for x in earth.__dict__])
 
 
 def make_protons_and_electrons():
-    universe = Physics(num_dims=3, universe_dimensions=100, t=0, dt=0.01, t_0=0, t_b=True, category='subatomic')
+    """Just makes it easier to create a working simulation for testing."""
+    universe = Physics(num_dims=3, universe_dimensions=100, t=0, dt=0.5, t_b=True,
+                       category='subatomic')
     for x in range(10):
         position = np.random.uniform(-70, 70, 3)
-        planet = Planet(radius=1, density=200, initial_position=position, charge=np.random.choice([-1, 1]),
-                        charge_density=0.01, universe=universe)
+        choice = np.random.choice([-1, 1])
+        planet = Planet(radius=1, density=200, initial_position=position, charge=choice,
+                        charge_density=0.001, universe=universe)
     plt.show()
 
 
 # make_protons_and_electrons()
-make_solar_system(num_dims=3, dt=0.07, universe_dimensions=250, t_b=True,
-                  stars=True, sun_density=1e12, sun_radius=10, n_planets=10, rand_orbits=True,
-                  show=True, save=False, rings=True, charge=False)
+if __name__ == "__main__":
+    print("hello")
+    make_solar_system(num_dims=3, dt=0.07, universe_dimensions=250, t_b=True,
+                      stars=True, sun_density=1e12, sun_radius=10, n_planets=10, rand_orbits=True,
+                      show=True, save=False, rings=True, charge=False)
