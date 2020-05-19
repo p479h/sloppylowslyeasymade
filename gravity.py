@@ -1,5 +1,5 @@
 """
-    gravity.py in 3d
+    Simulating nature... Trying at least...
     """
 from matplotlib.animation import FuncAnimation
 import matplotlib as mpl
@@ -12,11 +12,20 @@ class Physics:
     """Physics was created as a class, because I want physical laws to be mutable!
     Imagine being able to have a glimpse of what the universe would be like if
     the fundamental forces of nature behaved differently!
-    Functions defined here will represent physical laws or suport for visuals.
-    IN the future, there will be support for charged particles."""
+    Functions defined here will represent physical laws and suport for visuals.
+    IN the future, there will be support for charged particles.
+
+    Parameters
+    ----------
+    *Parameters will be described here.
+
+    Methods
+    -------
+    *Methods will be described here
+    """
 
     def __init__(self, origin=None, universe_dimensions=150, t_0=0, t=0, dt=0.1, num_dims=2, t_b=False,
-                 stars=False):
+                 stars=False, category="universe"):
         self.origin = origin if origin else np.array([0 for x in range(num_dims)])  # (m, m)
         self.universe_dimensions = [(-universe_dimensions, universe_dimensions)
                                     for dimension in range(num_dims)]  # m This is the lengths of -+ xyz axes
@@ -44,7 +53,10 @@ class Physics:
             self.text = self.ax.text2D(.1, 0.1, "", color="white", transform=self.ax.transAxes)
             self.ax.view_init(21, 79)
         self.fig.set_facecolor("black")
-        self.ax.set_title('Predru\'s world', color="white", fontdict={'fontname': "monospace"})
+        c = "black" if num_dims == 2 else "white"
+        text_setter = 'Predrus\'s world' if category.lower() == "universe" else \
+            'Predrus\'s particles' if category.lower() == "subatomic" else "Predrus\'s creation"
+        self.ax.set_title(text_setter, color=c, fontdict={'fontname': "monospace"})
         self.make_buttons()
         self.make_stars() if stars else None  # makes stars
 
@@ -64,12 +76,18 @@ class Physics:
 
     def m_force(self, object_self, object_other):
         """WHEN COMPLETED IT WILL FIND THE MAGENTIC FORCES"""
-        if object_self.charge == None or object_other.change == None:
+        if object_self.charge == None or object_other.charge == None:
             return self.origin * 0
-        forces = self.g_force(object_self, object_other)  # uses the set up of the gravitational forces.
-        forces = forces*self.C_cons/self.G_cons/object_other.mass/object_self.mass
-        forces = forces*object_self.charge*object_other*charge*-1
-        return forces
+        elif (object_other.charge == 1 or object_other.charge == -1) and (object_self.charge == 1 or
+                                                                          object_self.charge == -1):
+            forces = self.g_force(object_self, object_other)  # uses the set up of the gravitational forces.
+            forces = forces*self.C_cons/self.G_cons/object_other.mass/object_self.mass
+            prdct_of_charges = object_other.total_charge*object_self.total_charge
+            forces = forces*prdct_of_charges*-1  # nEnsures the direction of the force comes out right
+            return forces
+        else:
+            print("You made a mistake somewhere")
+            return self.origin * 0
 
     def update_velocity(self, object, forces):
         """receives np.array([f_x, f_y, f_z])
@@ -138,8 +156,10 @@ class Physics:
                 pl.data = ([[pl.position[i]] for i in range(3)])
                 pl.scatt._offsets3d = tuple(pl.data)
         self.t += self.dt
-        self.text.set_text(f"{round(self.t, 2)} seconds") if self.t_b else None
-
+        if self.dt >= 0.1:
+            self.text.set_text(f"{round(self.t, 2)} seconds") if self.t_b else None
+        else:
+            self.text.set_text(f"{round(self.t, 1)} seconds") if self.t_b else None
         # Here the 3d stuff will come
 
     def play(self, button_press):
@@ -178,11 +198,11 @@ class Physics:
         else:
             self.stars = self.ax.scatter(x, y, c='white', alpha=0.8, marker="*", s=s)
 
-    def make_n_objects(self, number, clas, rings=False):
+    def make_n_objects(self, number, clas, rings=False, charge=False):
         """makes n planet
         universe.make_n_objects(10, Planet)"""
         for x in range(number):
-            f = clas.random__init__(self, rings=rings)
+            f = clas.random__init__(self, rings=rings, charge=charge)
 
 
 class Planet:
@@ -192,7 +212,7 @@ class Planet:
 
     def __init__(self, shape="sphere", radius=1, density=10,
                  initial_position=None, initial_v=None, charge=None,
-                 universe=None, ring=False):
+                 universe=None, ring=False, charge_density=1, category="planet"):
         """
             Planet characteristics. Universe is a Physics instance
             shape is a string
@@ -201,6 +221,7 @@ class Planet:
             initial position is a set of coordnates such as (x, y, z)
             charge has no function yet
             initial_v is initial velocity
+            charge = +-1!!!! Charge density comes in Cm-3
             WATCH OUT FOR THE NUMBER OF DIMESIONS. Should match with universe!
             """
         self.universe = universe
@@ -210,7 +231,11 @@ class Planet:
         self.volume = 4/3*3.14*self.dimensions**3
         self.density = density  # kg m-3
         self.mass = self.density * self.volume  # kg
-        self.charge = charge if charge else None
+        if charge:
+            self.charge = charge
+            self.total_charge = charge*charge_density*4/3*3.14*radius**3
+        else:
+            self.total_charge = None
         if type(initial_position) == tuple:
             initial_position = np.array(initial_position)
         elif type(initial_position) == np.ndarray:
@@ -240,7 +265,7 @@ class Planet:
                                              s=self.dimensions**3 * 4, alpha=0.95)
             else:
                 self.scatt = plot[1].scatter(datas[0], datas[1], datas[2],
-                                             s=self.dimensions**3, alpha=0.95)
+                                             s=self.dimensions**3, alpha=0.95, c="yellow")
 
         Planet.planets.append(self)
 
@@ -318,7 +343,7 @@ class Planet:
                 self.velocity[index] = -self.velocity[index]
 
     @staticmethod
-    def random__init__(universe, rings=False):
+    def random__init__(universe, rings=False, charge=None):
         """Creates randomized planet"""
         generate = np.random.uniform
         max = universe.universe_dimensions[0][1]*0.7
@@ -326,11 +351,13 @@ class Planet:
         r, d, ip, i_v = generate(1, 5), generate(1, 1e10), \
             generate(-max, max, size=zi), generate(-15, 15, zi)
         ans = np.random.randint(0, 10) if rings else False
+        charge = np.random.choice([-1, 1]) if charge else None
         if ans >= 7:
             ans = True
         else:
             ans = False
-        return Planet(radius=r, density=d, initial_position=ip, universe=universe, initial_v=i_v, ring=ans)
+        return Planet(radius=r, density=d, initial_position=ip, universe=universe, initial_v=i_v,
+                      ring=ans, charge=charge)
 
     def set_v_orbit(self, sun):
         """sets planet's orbit around it's sun!"""
@@ -353,7 +380,7 @@ class Planet:
         i = 1
         for planet in self.get_other_planets():
             planet.set_v_orbit(self)
-            if self.universe.num_dims == 3:
+            if self.universe.num_dims == 3 and both_axes:
                 if i % 2 == 0:
                     planet.velocity = planet.velocity[::-1]
                     planet.position = planet.position[::-1]
@@ -365,7 +392,7 @@ class Planet:
                 elif i % 3 == 0:
                     v = planet.velocity[planet.velocity != 0][0]/np.sqrt(2)
                     planet.velocity = np.array([-1*v, 0, v])
-            if np.random.randint(0, 10) % 2 == 0:
+            if np.random.randint(0, 10) % 2 == 0 and both_axes:
                 planet.velocity = planet.velocity*-1
             planet.initial_v = planet.velocity.copy()
             planet.initial_position = planet.position.copy()
@@ -374,7 +401,7 @@ class Planet:
 
 def make_solar_system(num_dims=2, dt=0.1, universe_dimensions=250, t_b=True,
                       stars=True, sun_density=1e12, sun_radius=10, n_planets=10,
-                      rand_orbits=True, show=True, save=False, rings=False):
+                      rand_orbits=True, show=True, save=False, rings=False, charge=False):
     universe = Physics(num_dims=num_dims, dt=dt, universe_dimensions=universe_dimensions,
                        t_b=t_b, stars=stars)
     earth = Planet(universe=universe, density=sun_density, radius=sun_radius,
@@ -384,9 +411,19 @@ def make_solar_system(num_dims=2, dt=0.1, universe_dimensions=250, t_b=True,
     if show == True:
         plt.show()
     if save == True:
-        universe.record_gif(name_gif='gravity_3d.gif', frames=1000, fps=25, repeat=False)
+        universe.record_gif(name_gif='gravity_3d_new.gif', frames=1000, fps=35, repeat=False)
 
 
-make_solar_system(num_dims=3, dt=0.05, universe_dimensions=250, t_b=True,
+def make_protons_and_electrons():
+    universe = Physics(num_dims=3, universe_dimensions=100, t=0, dt=0.01, t_0=0, t_b=True, category='subatomic')
+    for x in range(10):
+        position = np.random.uniform(-70, 70, 3)
+        planet = Planet(radius=1, density=200, initial_position=position, charge=np.random.choice([-1, 1]),
+                        charge_density=0.01, universe=universe)
+    plt.show()
+
+
+# make_protons_and_electrons()
+make_solar_system(num_dims=3, dt=0.07, universe_dimensions=250, t_b=True,
                   stars=True, sun_density=1e12, sun_radius=10, n_planets=10, rand_orbits=True,
-                  show=True, save=False, rings=True)
+                  show=True, save=False, rings=True, charge=False)
