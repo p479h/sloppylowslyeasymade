@@ -13,7 +13,7 @@ class Physics:
 
     Atributes
     ---------
-        create an instance called "instance"
+        to see atributes, create a Physics instance called "instance"
         run: print(instance.__dict__)
 
     Output
