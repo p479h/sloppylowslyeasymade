@@ -1,5 +1,5 @@
-"""
-    Physics class + other imports
+""" 
+    Physics simulation
     """
 from matplotlib.animation import FuncAnimation
 import matplotlib as mpl
