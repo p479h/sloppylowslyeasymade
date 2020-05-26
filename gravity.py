@@ -1,433 +1,619 @@
-""" 
-    Physics simulation
-    """
+"""
+    This is the first class to be created. It will contain the main figure and axes.
+    It should also contain a function to make all the buttons necessary. It should
+    contain a list with all the important objects inside it."""
+
 from matplotlib.animation import FuncAnimation
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import numpy as np
 import mpl_toolkits.mplot3d.axes3d as p3
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+from matplotlib.cm import ScalarMappable
+from matplotlib.colors import Normalize
+from matplotlib.patches import FancyBboxPatch
 
 
 class Physics:
-    """Class that controls physical laws and visualization
+    """Back-bone of the simulation. Contains the main figure and axes"""
+    instances = []  # You never know when you will neeed to acces Physics instances
 
-    Atributes
-    ---------
-        create an instance called "instance"
-        run: print(instance.__dict__)
-
-    Output
-    ------
-        A physics instance. Analogous to a "universe".
-        Planet objects take "universes" as arguments.
-        The properties of this "universe" determine how
-        Planet instances will interact.
-        """
-    instances = []
-
-    def __init__(self, origin=None, u_size=150, t=0, dt=0.1,
-                 num_dims=2, show_time=False, stars=False, category="universe"):
-        """
-        Parameters
-        ----------
-            origin: np.array, optional
-                Origin of the Physics instance
-                (default  = 0)
-
-            u_size: int, float
-                Side length of Physics instance if imagined as a cube
-                (default  = 150)
-
-            t: int, float
-                Current time
-                (default  = 0)
-
-            dt: int, float
-                Time step taken when evaluating changes in instances
-                (default  = 0.1)
-
-            num_dims: int
-                Number of physical dimensions in the system (2 or 3)
-                (default  = 2)
-
-            show_time: bool
-                Show time in plot? (default  = False)
-
-            stars: bool
-                Show stars in plot? (default  = False)
-
-            category: str
-                Changes the name of the plot
-                {"universe": "x world", "subatomic": "x particles",
-                other: "x creation"}. x = "Predru's """
-        self.origin = origin if origin else np.array([0 for x in range(num_dims)])  # (m, m)
-        self.u_size = [(-u_size, u_size) for dimension in range(num_dims)]  # m This is the lengths of -+ xyz axes
-        self.num_dims = num_dims
-        self.t = t  # s
+    def __init__(self, u_size=1000, num_dims=2, stars=True, dt=0.01,
+                 show_time=False, name="Predru\'s world", recording=False, *args, **kwargs):
+        # Follow Universe characteristics
+        self.u_size = u_size  # If universe is a cube, u_size = side length
+        self.num_dims = num_dims  # Number of dimensions (2-3)
+        self.stars = stars  # If the plot has stars
+        self.zeroes = np.array([0 for n in range(num_dims)])  # Easy starting point
+        self.t = 0  # s
         self.dt = dt  # s
-        self.G_cons = 6.674*1e-11  # m3 kg-1 s-2
-        self.C_cons = 8.9875517923*1e9  # kg m3 s-4 A-2
+        self.constants = {"G": 6.67408*1e-11, "K_e": 8.9875517923*1e9}  # Constants in STI
         self.show_time = show_time
-        self.category = category  # {universe: world, subatomic: particles}
-        self.make_plot()  # This takes care of the visuals
-        self.make_stars() if stars else None  # makes stars
-        self.objects = []  # used for optimization
-        self.__class__.instances.append(self)
+        self.name = name  # Title of the figure
+        self.objects = []  # List of objects in Physics instance
 
-    def make_plot(self):
-        """Makes the visuals"""
-        self.fig = plt.figure()
-        if self.num_dims == 2:
-            self.ax = self.fig.add_subplot(111)
-            self.ax.set(fc='black', xlim=self.u_size[0], ylim=self.u_size[1])
-            self.text = self.ax.text(.1, 0.1, "", color="white", transform=self.ax.transAxes)
-        elif self.num_dims == 3:
-            self.ax = p3.Axes3D(self.fig)
-            self.ax.set(fc='black', xlim=self.u_size[0],
-                        ylim=self.u_size[1], zlim=self.u_size[2])
-            self.ax.grid(False)
-            self.ax.set_facecolor('black')
-            self.ax.w_xaxis.set_pane_color((0.0, 0.0, 0.0, 0.0))
-            self.ax.w_yaxis.set_pane_color((0.0, 0.0, 0.0, 0.0))
-            self.ax.w_zaxis.set_pane_color((0.0, 0.0, 0.0, 0.0))
-            self.text = self.ax.text2D(.1, 0.1, "", color="white", transform=self.ax.transAxes)
-            self.ax.view_init(21, 79)
-        else:
-            print('Number of dimensions not supported for visualization')
-        self.fig.set_facecolor("black")
-        c = "black" if self.num_dims == 2 else "white"
-        text_setter = 'Predrus\'s world' if self.category.lower() == "universe" else \
-            'Predrus\'s particles' if self.category.lower() == "subatomic" else "Predrus\'s creation"
-        self.ax.set_title(text_setter, color=c, fontdict={'fontname': "monospace"})
-        self.make_buttons()
+        # Follow elements about recording
+        self.recording = recording  # True for recorded Simulation
 
-    def g_force(self, object_self, object_other):
-        """
-        Parameters
-        ----------
-            object_self = object with mass and position.
-            object_other = object with mass and position.
-        Output
-        ------
-            The net gravitational pull of object_other on object_self
-            as a vecor/np.ndarray.
-        """
-        os, oo = object_self, object_other
-        r = oo.position - os.position
-        IrI = np.sqrt(sum(r**2))
-        if os.shape == "sphere" and oo.shape == "sphere":
-            if IrI <= os.dimensions+oo.dimensions:
-                return r*0
-            elif IrI <= os.dimensions:
-                return r*0
-        a = self.G_cons*oo.mass*r/IrI**3
-        forces = a*os.mass
-        return forces
+        # Follow elements that concerns plotting and stars
+        self.make_plot()  # makes the plot
+        self.buttons = {}  # Easy access to buttons and their axes
+        self.sliders = {}  # E.g {"Button1":{"ax":<object>, "button":<Button>}}
+        self.radiobuttons = {}  # {"cycles":{"ax":<object>, "slider":<Slider>}}
+        self.radiobuttons_status = None  # Used to set visibility
+        self.widgets_fig = plt.figure(figsize=(4, 3))  # Separate figure for widgets
+        self.new_make_buttons()  # makes buttons
+        self.new_make_sliders()
+        self.make_stars() if stars else None  # Makes stars for a prettier background
+        self.cmap = {}  # Information about cmap
 
-    def m_force(self, object_self, object_other):
-        """
-        Parameters
-        ----------
-            object_self = object with charge and position.
-            object_other = object with charge and position.
-        Output
-        ------
-            The net electric pull of object_other on object_self
-            as a vecor/np.ndarray."""
-        if object_self.charge == None or object_other.charge == None:
-            return self.origin * 0
+        # Stuff on the colormaps
+        self.cmap["cmaps"] = plt.colormaps()
+        self.cmap["cmap"] = "inferno"
+        self.cmap["ax"] = None  # Will be used for an actual axes with text
+        self.cmap["buttons"] = {}  # Here we will have the buttons and their axes
+        self.cmap["current_txt"] = None
+        self.colorbar = None  # Placeholder for colorbar
+        self.make_text_display()
 
-        elif (object_other.charge == 1 or object_other.charge == -1) and \
-                (object_self.charge == 1 or object_self.charge == -1):
+        # More stuff on organization
+        self.__class__.instances.append(self)  # Adds self to instances
 
-            r = object_other.position - object_self.position
-            IrI = np.sqrt(sum(r**2))
+        # Things that functions depend on
+        self.running = False  # will be set to true while simulation runs
+        # Should be set to false if simulation is to begin.
+        self.show = "all"  # Used to choose which paths are shown.
+        self.full_paths_showing = False  # Bug prevention
+        self.select_show = "all"  # Chooses which objects Display
+        self.data_status = "needs_cycles"  # For when we just need to append new data
+        self.data_status = "updated"  # For when we don't need more calculations
+        self.data_status = "empty"  # For when all calculations must be remade
+        self.color_status = "empty"  # For when color_arrays have to be resetted
+        self.color_status = "updated"  # For when color_arrays can be left out
 
-            prdct_of_charges = object_other.total_charge*object_self.total_charge
-            forces = self.C_cons*prdct_of_charges*r/IrI**3
-            forces = forces*-1  # nEnsures the direction of the force comes out right
-            return forces
-        else:
-            print("You made a mistake somewhere")
-            return self.origin * 0
+        # Things for testing later
+        self.object_pairs = []  # Will help with efficiency
 
-    def update_velocity(self, object, forces):
-        """
-        Parameters
-        ----------
-            object = object with mass and position.
-            forces = vector/ndarray with net forces on object.
-        Sets
-        ----
-            object.velocity = forces/object.mass*dt + object.velocity
+    def find_pairs(self):
+        if len(self.object_pairs) == 0:
+            for index, object in enumerate(self.objects):
+                for object2 in self.objects[index+1:len(self.objects)]:
+                    if index+1 != len(self.objects)-1:
+                        self.object_pairs.append([object, object2])
 
-        Output
-        ------
-            New object's velocity as a vector/ndarray.
-            """
-        dt = self.dt
-        dps = forces*dt  # Changes in momentum
-        dvs = dps/object.mass  # Changes in speed
-        vs = object.velocity + dvs  # Final velocity
-        return vs
+#######################################################################################################################################
+#######################################################################################################################################
+#######################################################################################################################################
+#######################################################################################################################################
+#######################################################################################################################################
+#######################################################################################################################################
+#######################################################################################################################################
+# widgets
 
-    def update_2d_axes(self):
-        """Updates the plot after planetary movement"""
-        self.fig.canvas.draw()
-        self.fig.canvas.flush_events()
+    def make_text_display(self):
+        """Makes the very pretty colormap selector!!!"""
+        # making actual text
+        # Making colorbar
+        self.cmap["ax"] = self.widgets_fig.add_axes([0.5, 0.3, 0.4, 0.25])
+        ax = self.cmap["ax"]  # Shorter writting
+        grid = np.meshgrid(np.linspace(0, 1, 220), np.ones(100))[0]  # We need this for colors
+        self.colorbar = self.cmap["ax"].imshow(grid, cmap=self.cmap['cmap'])
+        ax.format_coord = lambda x, y: ""  # This ensures the main GUI. Doesnt fuck up.
+        ax.patch.set_edgecolor("black")  # Just for appearences
+        ax.patch.set_linewidth('1')  # Just for appearences
+        ax.tick_params("both", length=0, labelsize=0, labelcolor="white")  # Also prettiness
+        fontdict = {'fontname': "monospace", "size": 8}
+        text = f"{self.cmap['cmap']}"
+        p_bbox = FancyBboxPatch((0.33, 0.75), abs(0.345), abs(0.1),
+                                boxstyle="round,pad=0.1", ec="k", fc="none",
+                                zorder=10., transform=ax.transAxes)  # Nice round shape
+        self.cmap["current_txt"] = ax.text(0.25, 0.78, text, fontdict, transform=ax.transAxes)
+        ax.add_patch(p_bbox)  # Adds pretty box!
 
-    def make_buttons(self):
-        """Creates buttons that help with the interaction"""
-        self.button_axes = []
-        self.fig2 = plt.figure(figsize=(3, 2))
-        ax1 = self.fig2.add_axes([0.1, 0.6, 0.4, 0.3], label="ax1")
-        ax2 = self.fig2.add_axes([0.5, 0.6, 0.4, 0.3], label="ax2")
-        ax3 = self.fig2.add_axes([0.5, 0.3, 0.4, 0.3], label="ax3")
-        ax4 = self.fig2.add_axes([0.1, 0.3, 0.4, 0.3], label="ax4")
-        ax5 = self.fig2.add_axes([0.15, 0.1, 0.7, 0.1], label="ax5")
-        for ax in (ax1, ax2, ax3, ax4, ax5):
-            ax.get_yaxis().set_visible(False)
-            ax.get_xaxis().set_visible(False)
-            self.button_axes.append(ax)
-        button = mpl.widgets.Button(self.button_axes[0], label='Play')
-        button.on_clicked(self.play)
-        self.play_button = button  # To keep the button existing!
-
-        button = mpl.widgets.Button(self.button_axes[1], label='Re-Play')
-        button.on_clicked(self.replay)
-        self.replay_button = button
-
-        slider = mpl.widgets.Slider(self.button_axes[4], label='dt',
-                                    valmin=0.01, valmax=2.0, valstep=0.01,
-                                    valinit=self.dt)
-        slider.on_changed(self.update_dt)
-        self.slider = slider
-
-        button = mpl.widgets.Button(ax3, "Exit")
-        button.on_clicked(self.close)
-        self.close_button = button
-
-    def close(self, press):
-        "Closes the plots"
-        plt.close("all")
-
-    def replay(self, click):
-        """Returns all Planet instances in the plot to their starting position and velocity"""
-        for object in self.objects:
-            object.position = object.initial_position
-            object.velocity = object.initial_v
-            # The map does not update correctly for some reason
-            self.t = 0
-
-    def update_dt(self, val):
-        self.dt = val
-
-    def evolve_system(self):
-        """Checks for all the physical changes that occur to all the Planet instances
-            under self dictating physical properties and updates the plot afterwards"""
-        for object in self.objects:  # Updates velocities of all planets
-            object.update_velocity()
-        for object in self.objects:  # Applies change in location after dt seconds
-            object.position = object.position + object.velocity*self.dt
-            object.update_ring_location() if 'update_ring_location' in dir(object) else None
-            object.data = np.c_[object.position[0], object.position[1]]
-            if self.num_dims == 2:
-                object.scatt.set_offsets(object.data)
-            else:
-                object.data = ([[object.position[i]] for i in range(3)])
-                object.scatt._offsets3d = tuple(object.data)
-        self.t += self.dt
-        if self.dt >= 0.1:
-            self.text.set_text(f"{round(self.t, 2)} seconds") if self.show_time else None
-        else:
-            self.text.set_text(f"{round(self.t, 1)} seconds") if self.show_time else None
-        # Here the 3d stuff will come
-
-    def play(self, button_press):
-        """Plays 2000 dt evolve_system() cycles"""
-        while True:
+        def change_text(self, commd):  # Command for the buttons
             try:
-                self.evolve_system()
-                if self.num_dims == 2:
-                    self.update_2d_axes()
+                current_cmap = self.objects[0].cmap
+                index = self.cmap['cmaps'].index(current_cmap)
+                text = self.cmap["current_txt"]
+                if commd == "advance":
+                    index += 1
+                elif commd == "None":
+                    index = index
                 else:
-                    self.update_3d_axes()
+                    index -= 1
+                new_cmap = self.cmap['cmaps'][index]
+                text.set_text(self.cmap['cmaps'][index])
+                for object in self.objects:
+                    object.cmap = self.cmap['cmaps'][index]
+                self.colorbar.set_cmap(new_cmap)
+                self.widgets_fig.canvas.draw()
+                self.widgets_fig.canvas.flush_events()
+                self.top_radio_button()
             except:
-                break
-        print("Simulation is over")
+                print("Press paths first. Then use this command.")
 
-    def update_3d_axes(self):
-        self.update_2d_axes()
+        # Wraps is a decorator because no sane person would write func twice.
+        def wraps(func, self, commd): return lambda click: func(self, commd)
+        back_func = wraps(change_text, self, "back")
+        advance_func = wraps(change_text, self, "advance")  # Each button gets own func
+        spec1, spec2 = [0.5, 0.46, 0.09, 0.09], [0.809, 0.46, 0.09, 0.09]  # Axes of buttons
+        self.cmap['buttons']['back'] = {}  # organization
+        self.cmap['buttons']['advance'] = {}
+        self.cmap['buttons']['back']['ax'] = axb = self.widgets_fig.add_axes(spec1)
+        self.cmap['buttons']['advance']['ax'] = axa = self.widgets_fig.add_axes(spec2)
+        self.cmap['buttons']['back']['button'] = mpl.widgets.Button(axb, "<-", color='green')
+        self.cmap['buttons']['advance']['button'] = mpl.widgets.Button(axa, "->", color='green')
+        self.cmap['buttons']['advance']['button'].on_clicked(advance_func)
+        self.cmap['buttons']['back']['button'].on_clicked(back_func)
+        self.widgets_fig.canvas.draw()  # Makes the function responsive.
+        self.widgets_fig.canvas.flush_events()
 
-    def record(self, frame):
-        """Function goes inside FuncAnimation when making animation"""
-        self.evolve_system()
-        print(frame)
-        return [pl.scatt for pl in self.objects]
+    def new_make_buttons(self):
+        # First define some functions:
+        def close(click): return plt.close("all")
 
-    def record_gif(self, name_gif='gravity_3d.gif', frames=100, fps=40, repeat=False):
-        """
-        Parameters
-        ----------
-            name_gif: str -> Name of the gif you wish to save
-                (default = "gravity_3d.gif")
-            frames: int -> length of gif in frames
-                (default = 100)
-            fps: int -> Frames per second
-                (default = 40)
-            repeat: bool
-                No idea what it does. (default = False)
-        Output
-        ------
-            gif named "name_gif" is created in current directory
-            """
-        ani = FuncAnimation(self.fig, self.record, repeat=repeat,
-                            frames=frames, blit=True, interval=1)
-        writergif = mpl.animation.PillowWriter(fps=fps)
-        ani.save(name_gif, writer=writergif)
-        print("Completed!")
+        def replay(click):
+            self.running = True  # Sets the planes running again.
+            self.replay()
+
+        def make_stop_button(self):
+            ax = self.widgets_fig.add_axes([0.5, 0.8, 0.2001, 0.2])
+            self.buttons["Stop"] = {}
+            self.buttons["Stop"]["ax"] = ax
+            button = mpl.widgets.Button(ax, "Stop", color="red")
+
+            def func(click):
+                self.running = False
+                self.buttons['Play']['ax'].set_visible(True)
+                self.buttons["Stop"]['ax'].set_visible(False)
+
+            def wraper(self, func): return lambda click: func(self)
+            button.on_clicked(wraper(self, func))
+            self.buttons["Stop"]["button"] = button
+
+        def play(click):
+            make_stop_button(self) if "Stop" not in self.buttons else None
+            self.buttons['Stop']['ax'].set_visible(True)
+            self.buttons["Play"]['ax'].set_visible(False)
+            self.widgets_fig.canvas.draw()
+            self.widgets_fig.canvas.flush_events()
+            self.play()
+
+        def new_button_func(self):
+            """Used in one of the buttons"""
+            if len(self.radiobuttons) < 2:
+                self.make_test_radiobuttons()
+            self.running = False
+
+        def path_maker(click): return [new_button_func(self),
+                                       self.new_collect_data(),
+                                       self.top_radio_button()]
+        commands = [play, replay, path_maker, close]  # button commands in order
+        # Play-Runs_simulation; #replay-Restarts simulation;
+        # path_maker-shows full paths; #close-Closes all figures.
+        names = 'Play,Replay,Path,Exit'.split(",")  # Button labels
+        colors = ["green", "blue", "cornflowerblue", "red"]
+        for x in range(4):  # Because there are 4 buttons
+            if x % 2 == 0:
+                new_axes = self.widgets_fig.add_axes([0.5, 0.8-x/10, 0.2, 0.2])
+            else:
+                new_axes = self.widgets_fig.add_axes([0.7, 0.8-(x-1)/10, 0.2, 0.2])
+            new_button = mpl.widgets.Button(new_axes, names[x], color=colors[x])
+            new_button.on_clicked(commands[x])
+            self.buttons[names[x]] = {"ax": new_axes, "button": new_button}  # Organizing
+
+    def make_test_radiobuttons(self):
+        """Makes radio buttons and creates function to set them visible or invisible"""
+        new_axes = self.widgets_fig.add_axes([0.1, 0.6, 0.3, 0.3])
+        commands = 'all,sun,planet,moon'.split(',')  # Will later include subatomic stuff.
+        button = mpl.widgets.RadioButtons(new_axes, commands, activecolor='purple')
+        def funcs(label): return [self.top_radio_button()]
+        button.on_clicked(funcs)  # Show selected category
+        self.radiobuttons["Object_categories_shown"] = {"ax": new_axes, "button": button}
+        new_axes = self.widgets_fig.add_axes([0.1, 0.3, 0.3, 0.3])
+        commands = 'None,colorvx,colorvy,colorvz,speed'.split(',')
+        button = mpl.widgets.RadioButtons(new_axes, commands, activecolor='purple')
+
+        def funcs2(Label):
+            self.color_status = "empty"  # Helps with efficiency
+            self.top_radio_button()
+        button.on_clicked(funcs2)  # Attribute velocity as color
+        self.radiobuttons["v_comps"] = {"ax": new_axes, "button": button}
+        self.color_status = "updated"  # Only needs to change if someone changes botton buttons
+        self.widgets_fig.canvas.draw()
+        self.widgets_fig.canvas.flush_events()
+
+    def new_make_sliders(self):
+        """Makes 2 sliders"""
+        axes = []  # Temporary storage for axes
+        for x in range(2):
+            specifications = [0.2, 0.1+x/15, 0.6, 0.05]
+            new_axes = self.widgets_fig.add_axes(specifications)
+            axes.append(new_axes)
+        slider = mpl.widgets.Slider(axes[1], label='cycles',
+                                    valmin=10, valmax=4000,
+                                    valstep=4, valinit=500)
+        slider.on_changed(lambda val: self.update_data_status())
+        self.sliders["cycles"] = {"ax": axes[1], "slider": slider}
+        slider = mpl.widgets.Slider(axes[0], label='dt', valmin=0.001,
+                                    valmax=0.2, valstep=0.001, valinit=self.dt)
+
+        def decorator(self, func):  # Save's space for other more important functions
+            def wraps(val): return func(self, val)
+            return wraps  # different ways of doing the same thing.
+
+        def update_dt(self, val):
+            self.dt = val  # New dt
+            self.data_status = "empty"  # New data must be calculated
+
+        slider.on_changed(decorator(self, update_dt))  # Updates dt
+        self.sliders["dt"] = {"ax": axes[0], "slider": slider}
+
+    def new_collect_data(self):
+        """Collects n cycles of planetary movement. n is taken from a slider.
+        This information is stored as object.path_data and object.v_data
+        for positions and velocities respectively"""
+        self.running = False
+        shape = (1, self.num_dims)  # Shape of the multidimentional array
+        number_cycles = int(self.sliders["cycles"]["slider"].val)  # Gets cycles from slider
+        print(number_cycles, "Cycles collected")  # Info about number of cycles
+        if self.data_status == "empty" or len(self.objects[0].path_data[1:, 0]) - number_cycles >= 0\
+                or self.color_status == "empty":  # Ensures new data is only gathered when needed
+            self.replay()  # Restats recording
+            for object in self.objects:
+                setattr(object, "path_data", np.empty(shape=shape))  # Restarts calculations
+                setattr(object, "v_data", np.empty(shape=shape))  # speed data
+
+        for x in range(number_cycles):  # number of cycles that are considered in the calculations
+            for object in self.objects:  # Updates velocities of all planets
+                object.calculate_net_acc()
+                object.update_velocity()
+            for object in self.objects:  # Applies change in location after dt seconds
+                object.update_position()
+                object.path_data = np.concatenate((object.path_data,
+                                                   object.position.reshape(shape)))
+                object.v_data = np.concatenate((object.v_data,
+                                                object.velocity.reshape(shape)))
+        self.data_status = "updated"  # Prevents repetitive calculations
+
+    def update_data_status(self):
+        """activates upon clicking cycles sliders
+        helps efficiency"""
+        if self.data_status == "updated":
+            self.data_status = "needs_cycles"
+        else:
+            self.data_status = "empty"
+
+    def top_radio_button(self):
+        """This function will be used by the top radio_button to determine which
+        objects will be shown"""
+
+        def temporarily_hide(self, object):
+            """Hides plots"""
+            if self.num_dims == 2:
+                print("temporarily_hide was called")
+                object.scatt._offsets = ([[None, None]])  # REmoves extra points
+                object.scatt._facecolors = [object.init_color]
+            else:
+                object.scatt._offsets3d = [[], [], []]
+                object.scatt._edgecolor3d = [object.init_color]
+                object.scatt._facecolor3d = [object.init_color]
+
+        def update_2d_scatter(self, object):
+            if comp_v == "None":
+                ccc = [object.init_color]
+            else:
+                cc_min = np.amin(array_dict[comp_v])  # This is because the thing is broken.
+                cc_max = np.amax(array_dict[comp_v])
+                cc = Normalize(cc_min, cc_max)
+                map = ScalarMappable(cc, object.cmap)
+                ccc = array_dict[comp_v]
+                ccc = map.to_rgba(ccc)
+            object.scatt._offsets = object.path_data[1:]
+            object.scatt._facecolors = ccc
+
+        if self.data_status != "updated":
+            self.new_collect_data()  # Collects data on color... Sets running to false
+        else:
+            self.running = False
+        to_show = self.radiobuttons["Object_categories_shown"]['button'].value_selected  # Category to show
+        comp_v = self.radiobuttons["v_comps"]['button'].value_selected
+        if to_show == "all" and self.color_status == "empty":
+            for object in self.objects:
+                clz = object.v_data[1:, 2] if object.num_dims == 3 else object.v_data[1:, 0]
+                speed = np.sqrt(np.sum(object.v_data**2, axis=1))[1:]
+                array_dict = {'None': object.init_color, 'colorvx': object.v_data[1:, 0],
+                              'colorvy': object.v_data[1:, 1], 'colorvz': clz, 'speed': speed}
+                ccc = array_dict[comp_v]
+                if self.num_dims == 2:
+                    update_2d_scatter(self, object)
+                else:
+                    if comp_v == "None":
+                        ccc = [object.init_color]  # Ensures the initial colors show
+                    else:
+                        cc_min = np.amin(array_dict[comp_v])  # This is because the thing is broken.
+                        cc_max = np.amax(array_dict[comp_v])
+                        cc = Normalize(cc_min, cc_max)
+                        map = ScalarMappable(cc, object.cmap)
+                        ccc = array_dict[comp_v]
+                        ccc = map.to_rgba(ccc)
+                    formated = [object.path_data[1:, 0], object.path_data[1:, 1], object.path_data[1:, 2]]
+                    object.scatt._facecolor3d = ccc  # Because matplotlib 3d is Broken!!!
+                    object.scatt._edgecolor3d = ccc
+                    object.scatt._offsets3d = formated
+                self.fig.canvas.draw()
+                self.fig.canvas.flush_events()
+        elif to_show == "all" and self.color_status == "updated":
+            # This is fow when only the positions change
+            for object in self.objects:
+                if self.num_dims == 2:
+                    clz = object.v_data[1:, 2] if object.num_dims == 3 else object.v_data[1:, 0]
+                    speed = np.sqrt(np.sum(object.v_data**2, axis=1))[1:]
+                    array_dict = {'None': object.init_color, 'colorvx': object.v_data[1:, 0],
+                                  'colorvy': object.v_data[1:, 1], 'colorvz': clz, 'speed': speed}
+                    update_2d_scatter(self, object)
+                else:
+                    formated = [object.path_data[1:, 0], object.path_data[1:, 1], object.path_data[1:, 2]]
+                    object.scatt._offsets3d = formated
+                self.fig.canvas.draw()
+                self.fig.canvas.flush_events()
+        else:
+            if self.color_status == "empty":
+                for object in self.objects:
+                    if object.category == to_show:  # These are being defined after the if statement for memory
+                        if self.num_dims == 2:
+                            clz = object.v_data[1:, 2] if object.num_dims == 3 else object.v_data[1:, 0]
+                            speed = np.sqrt(np.sum(object.v_data**2, axis=1))[1:]
+                            array_dict = {'None': object.init_color, 'colorvx': object.v_data[1:, 0],
+                                          'colorvy': object.v_data[1:, 1], 'colorvz': clz, 'speed': speed}
+                            update_2d_scatter(self, object)
+                        else:
+                            if comp_v == "None":
+                                ccc = [object.init_color]
+                            else:
+                                cc_min = np.amin(array_dict[comp_v])  # This is because the thing is broken.
+                                cc_max = np.amax(array_dict[comp_v])
+                                cc = Normalize(cc_min, cc_max)
+                                map = ScalarMappable(cc, object.cmap)
+                                ccc = array_dict[comp_v]
+                                ccc = map.to_rgba(ccc)
+                            formated = [object.path_data[1:, 0], object.path_data[1:, 1], object.path_data[1:, 2]]
+                            object.scatt._facecolor3d = ccc  # Because matplotlib 3d is Broken!!!
+                            object.scatt._edgecolor3d = ccc
+                            object.scatt._offsets3d = formated
+                    else:
+                        temporarily_hide(self, object)
+                    self.fig.canvas.draw()
+                    self.fig.canvas.flush_events()
+            elif self.color_status == "updated":
+                for object in self.objects:
+                    if object.category == to_show:
+                        if self.num_dims == 2:
+                            clz = object.v_data[1:, 2] if object.num_dims == 3 else object.v_data[1:, 0]
+                            speed = np.sqrt(np.sum(object.v_data**2, axis=1))[1:]
+                            array_dict = {'None': object.init_color, 'colorvx': object.v_data[1:, 0],
+                                          'colorvy': object.v_data[1:, 1], 'colorvz': clz, 'speed': speed}
+                            update_2d_scatter(self, object)
+                        else:
+                            formated = [object.path_data[1:, 0], object.path_data[1:, 1], object.path_data[1:, 2]]
+                            object.scatt._offsets3d = formated
+                    else:
+                        print(object.scatt._offsets)
+                        temporarily_hide(self, object)
+                        print(object.scatt._offsets)
+                    self.fig.canvas.draw()
+                    self.fig.canvas.flush_events()
+            else:
+                print("PRoblem in line 400something")
+# End of widgets
+#######################################################################################################################################
+#######################################################################################################################################
+#######################################################################################################################################
+#######################################################################################################################################
+#######################################################################################################################################
+#######################################################################################################################################
+#######################################################################################################################################
+
+    def replay(self):
+        """Gets objects to initial state"""
+        for object in self.objects:
+            object.velocity = object.init_v
+            object.position = object.init_p
+        self.t = 0
+        self.play() if self.running == True else None
+
+    def play(self):
+        self.running = True  # Set running status
+        self.radiobuttons_status = "remove"
+        if len(self.radiobuttons) > 1:  # Makes the radiobuttons disapear as they don't work with moving data
+            for key in self.radiobuttons:
+                self.radiobuttons[key]['ax'].remove()
+            del self.radiobuttons
+            self.radiobuttons = {}
+            self.widgets_fig.canvas.draw()
+            self.widgets_fig.canvas.flush_events()
+        for object in self.objects:
+            if self.num_dims == 2:
+                object.scatt._offsets = object._offsets
+                object.scatt._facecolors = [object.init_color]
+            else:
+                object.scatt._offsets3d = object._offsets3d
+                object.scatt._edgecolor3d = [object.init_color]
+                object.scatt._facecolor3d = [object.init_color]
+        while self.running:  # Pressing a button will disrupt the play. But not throw errors.
+            for object in self.objects:  # update all the velocities
+                object.calculate_net_acc()
+                object.update_velocity()
+            for object in self.objects:  # updates all the positions
+                if not self.running:
+                    break
+                object.update_position()
+                object.update_ring_location() if object.ring else None
+                object.update_scatt_offsets()
+            self.fig.canvas.draw()
+            self.fig.canvas.flush_events()
+            self.t = self.t + self.dt
+            self.text.set_text(f"{round(self.t, 1)} seconds") if self.show_time else None
+        else:
+            print("Play was just disrupted")
 
     def make_stars(self):
         "Adds stars to Physics instance.ax"
-        data = [np.random.randint(low=self.u_size[0][0]*2,
-                                  high=self.u_size[0][1]*2, size=45) for x in range(3)]
+        size = self.u_size, -1*self.u_size  # These values were randomly chosen
+        data = [np.random.randint(low=size[1]*2,
+                                  high=size[0]*2, size=45) for x in range(3)]
         x, y, z = [data[i] for i in range(3)]
-        s = np.random.randint(1, 10, 45)
+        s = np.random.randint(1, 10, 45)  # Random distribution of star sizes
         if self.num_dims == 3:
             self.stars = self.ax.scatter3D(x, y, z, c='white', alpha=0.8, marker="*", s=s)
         else:
             self.stars = self.ax.scatter(x, y, c='white', alpha=0.8, marker="*", s=s)
 
-    def make_n_planets(self, number, clas, rings=False, charge=False):
-        """Creates number instances of clas. (Designed for Planet).
-        Parameters
-        ----------
-            number: int
-            clas: class (current app supports only Planet)
-            rings: Gets
-            passed to Planet. Giving it a chance of 30% of getting a ring.
-            Charge: Gets passed to Planet. Giving it a chance of 30% of getting a charge.
-        """
-        for x in range(number):
-            f = clas.random__init__(self, rings=rings, charge=charge)
+    def make_plot(self):
+        """Makes the visuals"""
+        self.fig = plt.figure()
+        lims = lims = -1*self.u_size, self.u_size  # Dimensions of axes
+        # Checks number of dimensions of axes
+        if self.num_dims == 2:  # 2dimensions
+            self.ax = self.fig.add_subplot(111)
+            self.fig.set_facecolor("black")
+            self.ax.set(fc='black', xlim=lims, ylim=lims)
+            self.text = self.ax.text(.1, 0.1, "", color="white",
+                                     transform=self.ax.transAxes)  # Place where time will show
+        elif self.num_dims == 3:  # 3 dimensions
+            self.ax = p3.Axes3D(self.fig)
+            self.ax.set(fc='black', xlim=lims, ylim=lims, zlim=lims)
+            self.ax.grid(False)  # Makes it prettier
+            self.ax.w_xaxis.set_pane_color((0.0, 0.0, 0.0, 0.0))  # Erases grids
+            self.ax.w_yaxis.set_pane_color((0.0, 0.0, 0.0, 0.0))
+            self.ax.w_zaxis.set_pane_color((0.0, 0.0, 0.0, 0.0))
+            self.text = self.ax.text2D(.1, 0.1, "", color="white",
+                                       transform=self.ax.transAxes)
+            self.ax.view_init(21, 79)  # Nice angle for visuals
+        else:
+            # In case too many dimensions are used.
+            print('Number of dimensions not supported for visualization')
+        # Color c of text depends on whether you are recording or not
+        c = "black" if self.num_dims == 2 and self.recording else "white"
+        text_setter = self.name if self.name else "Predru\'s world"
+        self.ax.set_title(text_setter, color=c, fontdict={'fontname': "monospace"})
 
-    def make_n_moons(self, number, clas, planet_list):  # Still have to work on it.
-        pass
-
-
-class Large_things:
+############################################################################################################################
+############################################################################################################################
+############################################################################################################################
+#Making classes of things that use universe characteristics
+############################################################################################################################
+############################################################################################################################
+############################################################################################################################
+class Object:
     instances = []
-    """ Creates a particle
-    instances = []  # List of instances
-    """
 
-    def __init__(self, shape="sphere", radius=1, density=10,
-                 initial_position=None, initial_v=None, charge=None,
-                 universe=None, ring=False, charge_density=1, category="planet"):
-        """
-        Parameters
-        ----------
-            universe: Physics object -> Determines physical properties
-                (default = Physics())
-
-            shape: str -> Does not do much yet.
-                (default = "sphere")
-
-            charge: int == +-1 -> Gives + or - charge type to object.
-                (default = None)
-
-            charge_density: int, float -> Units: C m-3
-                (default = 1)
-
-            dimensions: int, float -> Radius -> Units: m
-                (default = 1)
-
-            density: int, float -> Mass density -> Units: kg/m3
-                (default = 1)
-
-            initial_v: np.ndarray, list, tupple -> Initial velocity of the object as a vector
-                [x, y] or [x, y, z] for 2, 3 dimensions respectively.
-                (default = np.array([0, 0]) or np.array([0, 0, 0]))
-
-            initial_position: np.ndarray, list, tupple -> Initial position of object given as vector
-                [x, y] or [x, y, z] for 2, 3 dimensions.
-                (default = np.array([0, 0]) or np.array([0, 0, 0]))
-
-            ring: bool -> If the planet has a ring.
-                (default = False)
-
-            category: str -> What king of object it is(e.g. Planet, Star...)
-                (default = "planet")
-            """
+    def __init__(self, universe=None, radius=10, rel_size=10,
+                 init_v=None, init_p=None, name=None, charge=None, charge_density=0,
+                 density=1e10, ring=False, color=None, cmap="inferno", marker=None,
+                 category="all"):
+        # characteristics
         self.universe = universe
-        self.shape = shape
-        self.charge = charge  # NUMBER 0=-, 1=+
-        self.dimensions = radius   # m3
-        self.volume = 4/3*3.14*self.dimensions**3
-        self.density = density  # kg m-3
-        self.category = category
-        self.mass = density * self.volume  # kg
-        self.charge_density = charge_density  # Cm-3
-        self.attribute_charge(charge)
-        self.set_position_velocity(initial_position, initial_v)
-        self.make_ring() if ring else None
-        self.create_plot()  # ads self to plot
-        self.__class__.instances.append(self)  # adds self to list of Large_things instances
-        universe.objects.append(self)  # ads self to universe objects
+        self.num_dims = self.universe.num_dims  # Used for plotting as well
+        self.radius = radius  # Radius m
+        self.volume = 4/3*3.14*radius**3
+        self.velocity = init_v
+        self.position = init_p
+        self.init_v = init_v  # Initial velocity
+        self.init_p = init_p  # Initial position
+        self.density = density  # Mass per unit volume
+        self.mass = density*self.volume
+        self.ring = True if ring else None  # Make ring?
+        self.check_p_and_v()  # Checks inputs for velocity and position
+        self.name = name  # Could be used to identify object later
+        self.charge = charge  # Charge +-1
+        self.charge_density = charge_density  # density of charge per unit volume
+        self.total_charge = charge*charge_density*self.volume if charge else None
+        self.category = category  # Used for stuff
+
+        # Plot related information
+        self.color = color
+        self.init_color = color
+        self.rel_size = int(rel_size)  # Used as a multiplier of size in plot
+        self.cmap = cmap
+        self.universe.cmap["cmap"] = cmap
+        self.marker = marker
+        self.area = None  # Will be used for 2d plotting
+        self.ax = self.universe.ax  # Facilitates writting
+        self.make_ring() if ring else None  # Makes rings
+
+        # Attributes used in functions
+        self.net_acc = self.universe.zeroes
+        self._offsets3d = None  # Used for 3d plotting
+        self._offsets = None  # Usef for 2d plotting
+        self.other_objects = []  # Used to facilitate computations
+        self.path_data = None  # Used for recordings
+        self.v_data = None  # Used for recordings
+        self.x_ring = None if not hasattr(self, 'x_ring') else self.x_ring
+        self.y_ring = None if not hasattr(self, 'y_ring') else self.y_ring
+        self.z_ring = None if not hasattr(self, 'z_ring') else self.z_ring  # Used for reference with rings
+        self.ring_location = None if not hasattr(self, 'ring_location') else self.ring_location  # Full coordinates of ring
+        self.ring_scatt = None if not hasattr(self, 'ring_scatt') else self.ring_scatt  # Scatt of ring
+        self.ring_offsets3d = None if not hasattr(self, 'ring_offsets3d') else self.ring_offsets3d  # _offsets 3d of rings
+
+        # Creates easy access to own instances
         try:
-            self.__class__.__bases__.instances.append(self)
+            self.__class__.__bases__.instances = []
+            self.__class__.instances.append(self)
+            self.universe.objects.append(self)
         except:
-            None
+            self.__class__.instances.append(self)
+            self.universe.objects.append(self)
 
-    def change_self_size(self, ratio_new_to_old):
-        """Change the size of a single instnce on the plot"""
-        size = self.scatt.get_sizes()*ratio_new_to_old
-        self.scatt.set_sizes(size)
-
-    def create_plot(self):
-        plot = self.universe.fig, self.universe.ax
-        c = "yellow" if self.category == "sun" else "white" if self.category == "moon"\
-            else None
-        marker = None  # "$♥$"
-        area = self.dimensions
+    def update_scatt_offsets(self):
+        """Updates scatter data points. Not to be used unless you are Pedro."""
         if self.universe.num_dims == 2:
-            self.scatt = plot[1].scatter(self.position[0], self.position[1],
-                                         s=area, c=c, marker=marker)
+            self.data = np.c_[self.position[0], self.position[1]]
+            # Self.data in this shape [[x, y], [x2, y2], ...]
+            self.scatt._offsets = self.data.copy()
+            self._offsets = self.data
         else:
-            datas = self.position[0], self.position[1], self.position[2]
-            self.scatt = plot[1].scatter(datas[0], datas[1], datas[2],
-                                         s=area, alpha=0.95, c=c, marker=marker)
+            self.data = ([[self.position[i]] for i in range(3)])
+            self.scatt._offsets3d = tuple(self.data)
 
-    def set_position_velocity(self, initial_position, initial_v):
-        if type(initial_position) == tuple or type(initial_position) == list:
-            initial_position = np.array(initial_position)
-        elif type(initial_position) == np.ndarray:
-            initial_position = initial_position
-        else:
-            initial_position = self.universe.origin
-        if type(initial_v) == tuple or type(initial_v) == list:
-            initial_v = np.array(initial_v)
-        elif type(initial_v) == np.ndarray:
-            initial_v = initial_v
-        else:
-            initial_v = self.universe.origin
-        self.velocity = initial_v
-        self.initial_v = initial_v
-        self.initial_position = initial_position
-        self.position = initial_position
+    def check_p_and_v(self):
+        """In case there is any issue with inputs. The Parameters become 0"""
+        types = type(self.init_v), type(self.init_p)
+        if types[0] != np.ndarray:
+            if types[0] == type(None):
+                self.init_v = self.velocity = self.universe.zeroes
+            try:
+                self.init_v = self.velocity = np.array(self.init_v)
+            except:
+                self.init_v = self.velocity = self.universe.zeroes
+        if types[1] != np.ndarray:
+            if types[1] == type(None):
+                self.init_p = self.position = self.universe.zeroes
+            try:
+                self.init_p = self.position = np.array(self.init_p)
+            except:
+                self.init_p = self.position = self.universe.zeroes
+        if len(self.init_p) != self.num_dims:
+            self.init_p = self.position = self.universe.zeroes
+        if len(self.init_v) != self.num_dims:
+            self.init_v = self.velocity = self.universe.zeroes
 
-    def attribute_charge(self, charge):  # to make init shorter
-        if charge:
-            self.charge = charge
-            self.total_charge = charge*self.charge_density\
-                * 4/3*3.14*self.dimensions**3
-        else:
-            self.total_charge = None
+    def update_ring_location(self):
+        """Updates the location of rings around self"""
+        if hasattr(self, 'x_ring'):
+            if self.num_dims == 2:
+                data = self.x_ring + self.position[0], self.y_ring + self.position[1]
+                data = np.c_[data[0], data[1]]
+                self.ring_scatt.set_offsets(data)
+            else:
+                data = self.x_ring + self.position[0], self.y_ring + self.position[1], \
+                    self.z_ring + self.position[2]
+                data = [data[i] for i in range(3)]
+                self.ring_scatt._offsets3d = tuple(data)
 
     def make_ring(self):
         "Makes a ring around self of using multiple points and pyploy.scatter"
-        r = self.dimensions*6
-        r = r/1.6 if self.universe.num_dims == 2 else r
+        r = self.radius*6
+        r = r/1.6 if self.num_dims == 2 else r
         self.t_ring = t = np.arange(0, np.pi * 2.0, 0.01)
         self.x_ring = r * np.cos(t)
         self.y_ring = r * np.sin(t)
@@ -435,46 +621,14 @@ class Large_things:
         x = r * np.cos(t)
         x = x + self.position[0]
         y = y + self.position[1]
-        if self.universe.num_dims == 2:
+        if self.num_dims == 2:
             self.ring_location = np.array([self.x_ring, self.y_ring])
-            self.ring = self.universe.ax.scatter(x, y, s=r/40)
+            self.ring_scatt = self.ax.scatter(x, y, s=r/40)
         else:
             self.z_ring = z = np.zeros(len(x))
             z = z + self.position[2]
-            self.ring = self.universe.ax.scatter(x, y, z, s=r/40)
+            self.ring_scatt = self.ax.scatter(x, y, z, s=r/40)
             self.ring_location = np.array([self.x_ring, self.y_ring, self.z_ring])
-
-    def update_ring_location(self):
-        if hasattr(self, 'x_ring'):
-            if self.universe.num_dims == 2:
-                data = data = self.x_ring + self.position[0], self.y_ring + self.position[1]
-                data = np.c_[data[0], data[1]]
-                self.ring.set_offsets(data)
-            else:
-                data = self.x_ring + self.position[0], self.y_ring + self.position[1], \
-                    self.z_ring + self.position[2]
-                data = [data[i] for i in range(3)]
-                self.ring._offsets3d = tuple(data)
-
-    def find_g_forces(self):
-        """Uses function of physics instance to obtain net force on self
-        outputs this net force as a ndarray."""
-        planetsF = self.get_other_objects()  # Forces of other planets on itself.
-        forces = np.array([0 for x in range(self.universe.num_dims)])
-        for planet in planetsF:  # Finds the overal forces when all planets are considered.
-            relative_coord = planet.position - self.position
-            forces = forces + self.universe.g_force(self, planet)
-        return forces
-
-    def find_charge_forces(self):
-        """finds all the gravitational forces of other planets on itself
-        these will get returned as a numpy array """
-        other_things = self.get_other_objects()
-        forces = np.array([0 for x in range(self.universe.num_dims)])
-        for thing in other_things:
-            dist = thing.position - self.position
-            forces = forces + self.universe.m_force(self, thing)
-        return forces
 
     def get_other_objects(self):
         """Returns list with all planets that might
@@ -482,122 +636,179 @@ class Large_things:
         index = self.universe.objects.index(self)
         lis = self.universe.objects.copy()
         lis.pop(index)
-        return lis
+        self.other_objects = lis
+
+    def calculate_net_acc(self):
+        self.get_other_objects() if self.other_objects == [] else None
+        self.net_acc = self.universe.zeroes  # Reset forces every cycle
+        if len(self.other_objects) >= 1:
+            self.calc_net_charge_acc()  # Gets charge acceleration
+            self.calc_new_g_acc()  # Gets g acceleration
+        else:
+            print("The planet is alone!")
+
+    def calc_net_charge_acc(self):
+        """Calculates the net acceleration due to coulumb interactions"""
+        k = self.universe.constants["K_e"]
+        if self.charge != 0 and self.charge != None:
+            for object in self.other_objects:
+                if object.charge != 0 and object.charge != None:
+                    r = object.position - self.position
+                    r_ = np.sqrt(sum(r**2))
+                    unit_v = r/r_
+                    if r_ > self.radius + object.radius:  # CHecks for proximity
+                        charge = self.total_charge*object.total_charge*-1
+                        acc = k*charge*unit_v/(sum(r**2)*self.mass)
+                        self.net_acc = self.net_acc + acc
+
+    def calc_new_g_acc(self):
+        """Calculates the net acceleration due to gravitational interactions"""
+        k = self.universe.constants["K_e"]
+        g = self.universe.constants["G"]
+        for object in self.other_objects:
+            r = object.position - self.position
+            r_ = np.sqrt(sum(r**2))
+            unit_v = r/r_
+            if r_ > self.radius + object.radius:  # CHecks for proximity
+                acc = g*object.mass*unit_v/sum(r**2)
+                self.net_acc = self.net_acc + acc
 
     def update_velocity(self):
-        """Updates the velocities of a planet"""
-        p = print
-        forces = self.find_g_forces() + self.find_charge_forces()
-        v_new = self.universe.update_velocity(self, forces=forces)
-        self.velocity = v_new
-        self.check_boundery()
+        self.velocity = self.velocity + self.net_acc*self.universe.dt
 
-    def check_boundery(self):
-        """Reflects particle's getting out of universe's "volume" """
-        for index, value in enumerate(self.position):
-            if abs(value) >= self.universe.u_size[0][1]*4:
-                self.velocity[index] = -self.velocity[index]
+    def update_position(self):
+        self.position = self.position+self.velocity*self.universe.dt
 
-    @staticmethod  # This function shall be revised
-    def random__init__(universe, rings=False, charge=None, cls=None):
-        """Creates randomized planet on using universe as template for physics
-        Outputs a Planet instance"""
-        generate = np.random.uniform
-        max = universe.u_size[0][1]*0.7
-        zi = universe.num_dims
-        r, d, ip, i_v = generate(1, 5), generate(1, 1e10), \
-            generate(-max, max, size=zi), generate(-15, 15, zi)
-        ans = np.random.randint(0, 10) if rings else False
-        charge = np.random.choice([-1, 1]) if charge else None
-        if ans and ans >= 7:
-            ans = True
+    def make_scatt(self):
+        """Makes scatter plots that can have their _offsets replaced easily
+        It is called when the object is first made."""
+        marker = self.marker
+        cmap = self.cmap
+        color = self.init_color
+        area = int(self.radius*self.rel_size if self.rel_size else self.radius)
+        if self.num_dims == 2:
+            self.scatt = self.universe.ax.scatter(self.position[0], self.position[1],
+                                                  cmap=cmap, s=area, c=color)
+            self._offsets = self.scatt.get_offsets()
+            self.area = area
+            self._offsets3d = None
+        elif self.num_dims == 3:
+            datas = self.position
+            self.scatt = self.universe.ax.scatter(datas[0], datas[1], datas[2], s=area, alpha=0.95,
+                                                  marker=marker, cmap=cmap, c=color)
+            self._offsets = None
+            self._offsets3d = self.scatt._offsets3d
         else:
-            ans = False
-        return cls(radius=r, density=d, initial_position=ip, universe=universe, initial_v=i_v,
-                   ring=ans, charge=charge)
-
-    def set_orbit(self, sun):
-        """sets planet's orbit around it's sun!
-        This is done by changing their initial position and velocity"""
-        d = self.position - sun.position
-        d = np.sqrt(sum(d**2))
-        g = self.universe.G_cons
-        v_ideal = np.sqrt(g*sun.mass / d)
-        if self.universe.num_dims == 3:
-            self.position = np.array([0, d, 0])
-            self.velocity = np.array([v_ideal, 0, 0])
-        else:
-            self.position = np.array([0, d])
-            self.velocity = np.array([v_ideal, 0])
-        self.initial_position = self.position.copy()
-        self.initial_v = self.velocity.copy()
-        self.universe.update_2d_axes() if self.universe.num_dims == 2 else \
-            self.universe.update_3d_axes()
-
-    def make_all_planets_orbit(self, both_axes=False):
-        """Makes "self" the sun
-        both axes refers to a more adventurous orbital style"""
-        i = 1
-        for planet in self.get_other_objects():
-            planet.set_orbit(self)
-            if self.universe.num_dims == 3 and both_axes:
-                if i % 2 == 0:
-                    planet.velocity = planet.velocity[::-1]
-                    planet.position = planet.position[::-1]
-
-                    if i % 4 == 0 and self.universe.num_dims == 3:
-                        v = planet.velocity[planet.velocity != 0][0]/np.sqrt(2)
-                        planet.velocity = np.array([v, 0, v])
-
-                elif i % 3 == 0:
-                    v = planet.velocity[planet.velocity != 0][0]/np.sqrt(2)
-                    planet.velocity = np.array([-1*v, 0, v])
-            if np.random.randint(0, 10) % 2 == 0 and both_axes:
-                planet.velocity = planet.velocity*-1
-            planet.initial_v = planet.velocity.copy()
-            planet.initial_position = planet.position.copy()
-            i = i+1 if both_axes else both_axes
-
-    def update_plot(self):
-        """Used to update plot upon creation of instance"""
-        self.data = np.c_[self.position[0], self.position[1]]
-        if self.universe.num_dims == 2:
-            self.scatt.set_offsets(self.data)
-        else:
-            self.data = ([[self.position[i]] for i in range(3)])
-            self.scatt._offsets3d = tuple(self.data)
-        self.universe.update_2d_axes()
+            self.scatt = self.universe.ax.scatter([], [])
+            print("Weird shit just happened")
+        self.init_color = self.scatt.get_facecolors()[0]
+        self.universe.cmap['cmap'] = cmap
+        self.universe.colorbar.set_cmap(cmap)
+        self.universe.cmap["current_txt"].set_text(cmap)
+        self.universe.fig.canvas.draw()
+        self.universe.fig.canvas.flush_events()
 
 
-class Planet(Large_things):  # adapt class to work with Physics
+class Large_object(Object):
+    """This class has better support for planetary motion"""
     instances = []
 
-    def __init__(self, category="planet", *args, **kwargs):
-        super().__init__(category=category, *args, **kwargs)
+    def __init__(self, orbit=None, orbit_rand=False, *args, **kwargs):
+        Object.__init__(self, *args, **kwargs)
+        self.orbit = orbit  # Object that this large object will orbit
+        # Orbit rand stands for random orbit
+        self.check_orbit(orbit_rand)  # Ensure orbit is stabilished
+        self.make_scatt()
 
+    def check_orbit(self, orbit_rand):
+        # flexibility with inputs
+        flex = {}
+        possible_yes = "random different yes true".split()
+        possible_no = "same equal no not false".split()
+        for yes in possible_yes:  # Will allow for multiple rand_orbit responses
+            flex[yes] = True
+        for no in possible_no:
+            flex[no] = False
+        limit = self.universe.u_size*2 if self.num_dims == 3 else self.universe.u_size  # Universe limits
+        g = self.universe.constants["G"]  # Gets constant
+        zeroes = np.zeros(self.num_dims)  # Used to control number of dimensions
+        if self.orbit:
+            r = self.orbit.init_p - self.init_p  # distance vector
+            r_ = np.sqrt(sum(r**2))
+            if r_ < (self.radius+self.orbit.radius)*1.5:  # Checks for Large objects on same point
+                self.init_p = np.zeros(self.num_dims)  # Sets position that eases calculations
+                min = limit/5
+                r_ = np.random.randint(min, limit)  # New distance
+            v_ideal = np.sqrt(g*self.orbit.mass/r_)
+            self.init_v = np.zeros(self.num_dims)
+            self.init_p = np.zeros(self.num_dims)
+            self.init_v[0] = v_ideal
+            print(self.init_v, "INit v", v_ideal)
+            self.init_p[0] = r_  # Assigns random distance to close objects along x axis
+            orbit_rand = "true" if orbit_rand == True else "False" if orbit_rand == False else orbit_rand
+            if not flex[orbit_rand.lower()]:  # The input may be weird
+                if self.num_dims == 2:
+                    self.init_p = self.init_p[::-1]  # Ensures perp velocity
+                elif self.num_dims == 3:
+                    self.init_p[0] = 0
+                    self.init_p[1] = r_
+            else:
+                v = self.init_v[self.init_v != 0][0]/np.sqrt(2)  # More components
+                self.init_v[0] = v
+                self.init_v[1] = v
+                while np.where(self.init_p != 0)[0][0] not in np.where(self.init_v == 0)[0]:
+                    for x in range(3):
+                        self.init_v[x] = self.init_v[x]*np.random.choice([-1, 1])  # Changes direction
+                        self.init_p[x] = self.init_p[x]*np.random.choice([-1, 1])  # Changes direction
+                    np.random.shuffle(self.init_p)
+                    np.random.shuffle(self.init_v)
+            self.init_v = self.init_v + self.orbit.init_v
+            self.init_p = self.init_p + self.orbit.init_p
+            self.velocity = self.init_v.copy()
+            self.position = self.init_p.copy()
+        print(self.position, self.velocity, f"are the init_v and p of {self.name}")
+        self.universe.fig.canvas.draw()
+        self.universe.fig.canvas.flush_events()
 
-class Sun(Large_things):
+############################################################################################################################
+############################################################################################################################
+############################################################################################################################
+#Making more specific classes 
+############################################################################################################################
+############################################################################################################################
+##################################################################################################################################################################
+
+class Planet(Large_object):  # adapt class to work with Physics
     instances = []
 
-    def __init__(self, category="sun", *args, **kwargs):
-        super().__init__(category=category, *args, **kwargs)
+    def __init__(self, category="planet", name='planet',
+                 rel_size=2,  *args, **kwargs):
+        super().__init__(category=category, name="planet",
+                         rel_size=rel_size, *args, **kwargs)
 
 
-class Moon(Large_things):
+class Sun(Large_object):
+    instances = []
+
+    def __init__(self, category="sun", name="sun", color="yellow",
+                 rel_size=2, *args, **kwargs):
+        super().__init__(category=category, name=name, color=color, *args, **kwargs)
+
+
+class Moon(Large_object):
     """Creates an object orbiting another object"""
     instances = []
 
     def __init__(self, orbit=None, rad_orb=10, resize=False, category="moon",
-                 **kwargs):
+                 color="white", name="moon", **kwargs):
         if orbit:
             kwargs["universe"] = orbit.universe
-            super().__init__(category=category, **kwargs)
             self.rad_orb = rad_orb
-            self.set_orbit(orbit)  # orbits orbit
             self.orbit = orbit
-            self.adjust_sizes(orbit, resize)
-            self.update_plot()
-            print("moon was created")
+            self.color = color
+            super().__init__(category=category, name=name,
+                             color=color, orbit=self.orbit, **kwargs)
+            self.check_orbit2(orbit)
         else:
             print("This object will not behave as a moon.")
 
@@ -605,45 +816,41 @@ class Moon(Large_things):
         v = np.sqrt(sum(self.velocity**2))
         print(v)
 
-    def adjust_sizes(self, orbit, resize):
-        if resize:
-            self.universe.already_resized = True if \
-                hasattr(self.universe, "already_resized") else False
-            if not self.universe.already_resized:
-                for planet in orbit.__class__.__bases__[0].instances:
-                    size = planet.scatt.get_sizes()
-                    size = size/orbit.dimensions**2 if planet.__class__ == \
-                        orbit.__class__ or planet.__class__.__bases__[0] == \
-                        planet.__class__.__bases__[0] else size/2
-                    planet.scatt.set_sizes(size)
+    def check_orbit(self, other):
+        pass  # Overrides the orginal
 
-    def set_orbit(self, orbit):
+    def check_orbit2(self, orbit):
         """sets planet's orbit around it's planet!
         This is done by changing their initial position and velocity.
         But it keelps the distance from the planet."""
         d = self.rad_orb
-        g = self.universe.G_cons
+        g = self.universe.constants["G"]
         v_ideal = np.sqrt(g*orbit.mass/d)
+        r = self.orbit.init_p - self.init_p  # distance vector
+        r_ = np.sqrt(sum(r**2))
+        if r_ < (self.radius+self.orbit.radius)*1.5:  # Checks for Large objects on same point
+            self.init_p = np.zeros(self.num_dims)  # Sets position that eases calculations
+            min = limit/5
+            r_ = np.random.randint(min, limit)
+            d = r_
         if self.universe.num_dims == 3:
             self.position = np.array([0, d, 0]) + orbit.position
             self.velocity = np.array([v_ideal, 0, 0]) + orbit.velocity
         else:
             self.position = np.array([0, d]) + orbit.position
             self.velocity = -1*np.array([v_ideal, 0]) + orbit.velocity
-        self.initial_position = self.position.copy()
-        self.initial_v = self.velocity.copy()
-
-#Running the simulation to get a feel for it
-if __name__ == "__main__":
-    universe = Physics(show_time=True, dt=0.01, num_dims=2, u_size=2000, stars=True)
-    sun = Sun(universe=universe, density=1e15, radius=40, initial_position=(0, 0))
-    sun.change_self_size(5)
-    for x in range(10):
-        x = Planet.random__init__(universe=universe, cls=Planet)
-    sun.make_all_planets_orbit(both_axes=False)
-    for planet in Planet.instances:
-        moon = Moon(orbit=planet, radius=2, density=1e10, rad_orb=30)
-    earth = Planet(radius=10, universe=universe, density=1e12, initial_position=(0, 1500))
-    earth.set_orbit(sun)
-    moon = Moon(orbit=earth, radius=1, density=1e10, rad_orb=20)
-    plt.show()
+        self.init_p = self.position.copy()
+        self.init_v = self.velocity.copy()
+        
+        
+############################################################################################################################
+############################################################################################################################
+############################################################################################################################
+universe = Physics(num_dims=2, u_size=2000, show_time=True)
+planet = Sun(universe=universe, density=1e14, ring=False, radius=40, cmap="summer")
+# planet2 = Large_object(universe=universe, init_p=(-500, 0, 0), orbit=planet, orbit_rand=True)
+# planet3 = Large_object(universe=universe, init_p=(-300, 0, 0), orbit=planet, orbit_rand=True)
+for x in range(3):
+    d = Planet(universe=universe, orbit=planet, orbit_rand=False, rel_size=2, cmap="spring",
+               radius=10, density=1e12)
+    c = Moon(orbit=d, orbit_rand=False, rel_size=1, cmap="summer", radius=2, rad_orb=20)
