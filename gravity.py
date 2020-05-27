@@ -39,8 +39,8 @@ class Physics:
         self.buttons = {}  # Easy access to buttons and their axes
         self.sliders = {}  # E.g {"Button1":{"ax":<object>, "button":<Button>}}
         self.radiobuttons = {}  # {"cycles":{"ax":<object>, "slider":<Slider>}}
-        self.radiobuttons_status = None  # Used to set visibility
         self.widgets_fig = plt.figure(figsize=(4, 3))  # Separate figure for widgets
+        self.make_test_radiobuttons()
         self.new_make_buttons()  # makes buttons
         self.new_make_sliders()
         self.make_stars() if stars else None  # Makes stars for a prettier background
@@ -52,6 +52,8 @@ class Physics:
         self.cmap["ax"] = None  # Will be used for an actual axes with text
         self.cmap["buttons"] = {}  # Here we will have the buttons and their axes
         self.cmap["current_txt"] = None
+        """{'cmaps':all cmaps, 'ax':text axes, 'current_txt': text instance,
+            'buttons':{'button_i: {'ax_i':ax, 'button': instance, 'id'=reference_on_clicked}'}}"""
         self.colorbar = None  # Placeholder for colorbar
         self.make_text_display()
 
@@ -138,12 +140,21 @@ class Physics:
         spec1, spec2 = [0.5, 0.46, 0.09, 0.09], [0.809, 0.46, 0.09, 0.09]  # Axes of buttons
         self.cmap['buttons']['back'] = {}  # organization
         self.cmap['buttons']['advance'] = {}
-        self.cmap['buttons']['back']['ax'] = axb = self.widgets_fig.add_axes(spec1)
-        self.cmap['buttons']['advance']['ax'] = axa = self.widgets_fig.add_axes(spec2)
-        self.cmap['buttons']['back']['button'] = mpl.widgets.Button(axb, "<-", color='green')
-        self.cmap['buttons']['advance']['button'] = mpl.widgets.Button(axa, "->", color='green')
-        self.cmap['buttons']['advance']['button'].on_clicked(advance_func)
-        self.cmap['buttons']['back']['button'].on_clicked(back_func)
+        self.cmap['buttons']['back']['ax'] = axb = \
+            self.widgets_fig.add_axes(spec1)
+        self.cmap['buttons']['advance']['ax'] = axa = \
+            self.widgets_fig.add_axes(spec2)
+        self.cmap['buttons']['back']['button'] = \
+            mpl.widgets.Button(axb, "<-", color='green')
+        self.cmap['buttons']['advance']['button'] =\
+            mpl.widgets.Button(axa, "->", color='green')
+        id = self.cmap['buttons']['advance']['button'].on_clicked(advance_func)
+        self.cmap['buttons']['advance']['id'] = id  # sets identification
+        id = self.cmap['buttons']['back']['button'].on_clicked(back_func)
+        self.cmap['buttons']['back']['id'] = id  # Sets identification
+        self.cmap['buttons']['advance']['button'].ax._visible = False
+        self.cmap['buttons']['back']['button'].ax._visible = False
+        self.colorbar._axes._visible = False
         self.widgets_fig.canvas.draw()  # Makes the function responsive.
         self.widgets_fig.canvas.flush_events()
 
@@ -152,6 +163,9 @@ class Physics:
         def close(click): return plt.close("all")
 
         def replay(click):
+            self.cmap['buttons']['advance']['button'].ax._visible = False
+            self.cmap['buttons']['back']['button'].ax._visible = False
+            self.colorbar._axes._visible = False
             self.running = True  # Sets the planes running again.
             self.replay()
 
@@ -160,6 +174,7 @@ class Physics:
             self.buttons["Stop"] = {}
             self.buttons["Stop"]["ax"] = ax
             button = mpl.widgets.Button(ax, "Stop", color="red")
+            ax._visible = False
 
             def func(click):
                 self.running = False
@@ -167,22 +182,32 @@ class Physics:
                 self.buttons["Stop"]['ax'].set_visible(False)
 
             def wraper(self, func): return lambda click: func(self)
-            button.on_clicked(wraper(self, func))
+            self.buttons["Stop"]["id"] = button.on_clicked(wraper(self, func))
             self.buttons["Stop"]["button"] = button
 
         def play(click):
-            make_stop_button(self) if "Stop" not in self.buttons else None
             self.buttons['Stop']['ax'].set_visible(True)
             self.buttons["Play"]['ax'].set_visible(False)
+            self.cmap['buttons']['advance']['button'].ax._visible = False
+            self.cmap['buttons']['back']['button'].ax._visible = False
+            self.colorbar._axes._visible = False
             self.widgets_fig.canvas.draw()
             self.widgets_fig.canvas.flush_events()
             self.play()
 
         def new_button_func(self):
             """Used in one of the buttons"""
-            if len(self.radiobuttons) < 2:
-                self.make_test_radiobuttons()
+            for key in self.radiobuttons:
+                self.radiobuttons[key]['ax'].set_visible(True)
+            self.buttons["Stop"]["button"].ax._visible = False
+            self.buttons["Play"]["button"].ax._visible = True
+            self.cmap['buttons']['advance']['button'].ax._visible = True
+            self.cmap['buttons']['back']['button'].ax._visible = True
+            self.colorbar._axes._visible = True
+            self.widgets_fig.canvas.draw()  # Redraws graph!
+            self.widgets_fig.canvas.flush_events()
             self.running = False
+        make_stop_button(self)
 
         def path_maker(click): return [new_button_func(self),
                                        self.new_collect_data(),
@@ -198,8 +223,8 @@ class Physics:
             else:
                 new_axes = self.widgets_fig.add_axes([0.7, 0.8-(x-1)/10, 0.2, 0.2])
             new_button = mpl.widgets.Button(new_axes, names[x], color=colors[x])
-            new_button.on_clicked(commands[x])
-            self.buttons[names[x]] = {"ax": new_axes, "button": new_button}  # Organizing
+            id = new_button.on_clicked(commands[x])
+            self.buttons[names[x]] = {"ax": new_axes, "button": new_button, "id": id}  # Organizing
 
     def make_test_radiobuttons(self):
         """Makes radio buttons and creates function to set them visible or invisible"""
@@ -219,7 +244,9 @@ class Physics:
         button.on_clicked(funcs2)  # Attribute velocity as color
         self.radiobuttons["v_comps"] = {"ax": new_axes, "button": button}
         self.color_status = "updated"  # Only needs to change if someone changes botton buttons
-        self.widgets_fig.canvas.draw()
+        for key in self.radiobuttons:  # Makes axes invisible as they can't be used initially
+            self.radiobuttons[key]["ax"].set_visible(False)
+        self.widgets_fig.canvas.draw()  # Redraws RadioButtons!
         self.widgets_fig.canvas.flush_events()
 
     def new_make_sliders(self):
@@ -232,8 +259,8 @@ class Physics:
         slider = mpl.widgets.Slider(axes[1], label='cycles',
                                     valmin=10, valmax=4000,
                                     valstep=4, valinit=500)
-        slider.on_changed(lambda val: self.update_data_status())
-        self.sliders["cycles"] = {"ax": axes[1], "slider": slider}
+        id = slider.on_changed(lambda val: self.update_data_status())
+        self.sliders["cycles"] = {"ax": axes[1], "slider": slider, "id": id}
         slider = mpl.widgets.Slider(axes[0], label='dt', valmin=0.001,
                                     valmax=0.2, valstep=0.001, valinit=self.dt)
 
@@ -245,8 +272,8 @@ class Physics:
             self.dt = val  # New dt
             self.data_status = "empty"  # New data must be calculated
 
-        slider.on_changed(decorator(self, update_dt))  # Updates dt
-        self.sliders["dt"] = {"ax": axes[0], "slider": slider}
+        id = slider.on_changed(decorator(self, update_dt))  # Updates dt
+        self.sliders["dt"] = {"ax": axes[0], "slider": slider, "id": id}
 
     def new_collect_data(self):
         """Collects n cycles of planetary movement. n is taken from a slider.
@@ -260,13 +287,16 @@ class Physics:
                 or self.color_status == "empty":  # Ensures new data is only gathered when needed
             self.replay()  # Restats recording
             for object in self.objects:
-                setattr(object, "path_data", np.empty(shape=shape))  # Restarts calculations
-                setattr(object, "v_data", np.empty(shape=shape))  # speed data
+                setattr(object, "path_data", np.array([[object.position[x] for
+                                                        x in range(self.num_dims)]]))  # Restarts calculations
+                setattr(object, "v_data", np.array([[object.velocity[x] for x
+                                                     in range(self.num_dims)]]))  # speed data
 
         for x in range(number_cycles):  # number of cycles that are considered in the calculations
             for object in self.objects:  # Updates velocities of all planets
                 object.calculate_net_acc()
                 object.update_velocity()
+
             for object in self.objects:  # Applies change in location after dt seconds
                 object.update_position()
                 object.path_data = np.concatenate((object.path_data,
@@ -286,31 +316,6 @@ class Physics:
     def top_radio_button(self):
         """This function will be used by the top radio_button to determine which
         objects will be shown"""
-
-        def temporarily_hide(self, object):
-            """Hides plots"""
-            if self.num_dims == 2:
-                print("temporarily_hide was called")
-                object.scatt._offsets = ([[None, None]])  # REmoves extra points
-                object.scatt._facecolors = [object.init_color]
-            else:
-                object.scatt._offsets3d = [[], [], []]
-                object.scatt._edgecolor3d = [object.init_color]
-                object.scatt._facecolor3d = [object.init_color]
-
-        def update_2d_scatter(self, object):
-            if comp_v == "None":
-                ccc = [object.init_color]
-            else:
-                cc_min = np.amin(array_dict[comp_v])  # This is because the thing is broken.
-                cc_max = np.amax(array_dict[comp_v])
-                cc = Normalize(cc_min, cc_max)
-                map = ScalarMappable(cc, object.cmap)
-                ccc = array_dict[comp_v]
-                ccc = map.to_rgba(ccc)
-            object.scatt._offsets = object.path_data[1:]
-            object.scatt._facecolors = ccc
-
         if self.data_status != "updated":
             self.new_collect_data()  # Collects data on color... Sets running to false
         else:
@@ -319,41 +324,25 @@ class Physics:
         comp_v = self.radiobuttons["v_comps"]['button'].value_selected
         if to_show == "all" and self.color_status == "empty":
             for object in self.objects:
-                clz = object.v_data[1:, 2] if object.num_dims == 3 else object.v_data[1:, 0]
-                speed = np.sqrt(np.sum(object.v_data**2, axis=1))[1:]
-                array_dict = {'None': object.init_color, 'colorvx': object.v_data[1:, 0],
-                              'colorvy': object.v_data[1:, 1], 'colorvz': clz, 'speed': speed}
-                ccc = array_dict[comp_v]
                 if self.num_dims == 2:
-                    update_2d_scatter(self, object)
+                    object.scatt._offsets = object.path_data
+                    object.scatt._facecolors = object.get_facecolor_array_from_v_data(comp_v)
                 else:
-                    if comp_v == "None":
-                        ccc = [object.init_color]  # Ensures the initial colors show
-                    else:
-                        cc_min = np.amin(array_dict[comp_v])  # This is because the thing is broken.
-                        cc_max = np.amax(array_dict[comp_v])
-                        cc = Normalize(cc_min, cc_max)
-                        map = ScalarMappable(cc, object.cmap)
-                        ccc = array_dict[comp_v]
-                        ccc = map.to_rgba(ccc)
-                    formated = [object.path_data[1:, 0], object.path_data[1:, 1], object.path_data[1:, 2]]
+                    ccc = object.get_facecolor_array_from_v_data(comp_v)
                     object.scatt._facecolor3d = ccc  # Because matplotlib 3d is Broken!!!
                     object.scatt._edgecolor3d = ccc
-                    object.scatt._offsets3d = formated
+                    object.scatt._offsets3d = [object.path_data[:, i] for i in range(3)]
                 self.fig.canvas.draw()
                 self.fig.canvas.flush_events()
         elif to_show == "all" and self.color_status == "updated":
             # This is fow when only the positions change
             for object in self.objects:
                 if self.num_dims == 2:
-                    clz = object.v_data[1:, 2] if object.num_dims == 3 else object.v_data[1:, 0]
-                    speed = np.sqrt(np.sum(object.v_data**2, axis=1))[1:]
-                    array_dict = {'None': object.init_color, 'colorvx': object.v_data[1:, 0],
-                                  'colorvy': object.v_data[1:, 1], 'colorvz': clz, 'speed': speed}
-                    update_2d_scatter(self, object)
+                    object.scatt._offsets = object.path_data[:]
+                    object.scatt._facecolors = \
+                        object.get_facecolor_array_from_v_data(comp_v)
                 else:
-                    formated = [object.path_data[1:, 0], object.path_data[1:, 1], object.path_data[1:, 2]]
-                    object.scatt._offsets3d = formated
+                    object.scatt._offsets3d = [object.path_data[:, i] for i in range(3)]
                 self.fig.canvas.draw()
                 self.fig.canvas.flush_events()
         else:
@@ -361,45 +350,27 @@ class Physics:
                 for object in self.objects:
                     if object.category == to_show:  # These are being defined after the if statement for memory
                         if self.num_dims == 2:
-                            clz = object.v_data[1:, 2] if object.num_dims == 3 else object.v_data[1:, 0]
-                            speed = np.sqrt(np.sum(object.v_data**2, axis=1))[1:]
-                            array_dict = {'None': object.init_color, 'colorvx': object.v_data[1:, 0],
-                                          'colorvy': object.v_data[1:, 1], 'colorvz': clz, 'speed': speed}
-                            update_2d_scatter(self, object)
+                            object.scatt._offsets = object.path_data
+                            object.scatt._facecolors = \
+                                object.get_facecolor_array_from_v_data(comp_v)
                         else:
-                            if comp_v == "None":
-                                ccc = [object.init_color]
-                            else:
-                                cc_min = np.amin(array_dict[comp_v])  # This is because the thing is broken.
-                                cc_max = np.amax(array_dict[comp_v])
-                                cc = Normalize(cc_min, cc_max)
-                                map = ScalarMappable(cc, object.cmap)
-                                ccc = array_dict[comp_v]
-                                ccc = map.to_rgba(ccc)
-                            formated = [object.path_data[1:, 0], object.path_data[1:, 1], object.path_data[1:, 2]]
+                            ccc = object.get_facecolor_array_from_v_data(comp_v)
                             object.scatt._facecolor3d = ccc  # Because matplotlib 3d is Broken!!!
                             object.scatt._edgecolor3d = ccc
-                            object.scatt._offsets3d = formated
+                            object.scatt._offsets3d = [object.path_data[:, i] for i in range(3)]
                     else:
-                        temporarily_hide(self, object)
+                        object.temporarily_hide()
                     self.fig.canvas.draw()
                     self.fig.canvas.flush_events()
             elif self.color_status == "updated":
                 for object in self.objects:
                     if object.category == to_show:
                         if self.num_dims == 2:
-                            clz = object.v_data[1:, 2] if object.num_dims == 3 else object.v_data[1:, 0]
-                            speed = np.sqrt(np.sum(object.v_data**2, axis=1))[1:]
-                            array_dict = {'None': object.init_color, 'colorvx': object.v_data[1:, 0],
-                                          'colorvy': object.v_data[1:, 1], 'colorvz': clz, 'speed': speed}
-                            update_2d_scatter(self, object)
+                            object.scatt._offsets = object.path_data
                         else:
-                            formated = [object.path_data[1:, 0], object.path_data[1:, 1], object.path_data[1:, 2]]
-                            object.scatt._offsets3d = formated
+                            object.scatt._offsets3d = [object.path_data[:, i] for i in range(3)]
                     else:
-                        print(object.scatt._offsets)
-                        temporarily_hide(self, object)
-                        print(object.scatt._offsets)
+                        object.temporarily_hide()
                     self.fig.canvas.draw()
                     self.fig.canvas.flush_events()
             else:
@@ -414,6 +385,8 @@ class Physics:
 #######################################################################################################################################
 
     def replay(self):
+        self.buttons["Play"]["button"].ax._visible = False
+        self.buttons["Stop"]["button"].ax._visible = True
         """Gets objects to initial state"""
         for object in self.objects:
             object.velocity = object.init_v
@@ -423,22 +396,12 @@ class Physics:
 
     def play(self):
         self.running = True  # Set running status
-        self.radiobuttons_status = "remove"
-        if len(self.radiobuttons) > 1:  # Makes the radiobuttons disapear as they don't work with moving data
-            for key in self.radiobuttons:
-                self.radiobuttons[key]['ax'].remove()
-            del self.radiobuttons
-            self.radiobuttons = {}
-            self.widgets_fig.canvas.draw()
-            self.widgets_fig.canvas.flush_events()
+        for key in self.radiobuttons:
+            self.radiobuttons[key]['ax'].set_visible(False)
+        self.widgets_fig.canvas.draw()
+        self.widgets_fig.canvas.flush_events()
         for object in self.objects:
-            if self.num_dims == 2:
-                object.scatt._offsets = object._offsets
-                object.scatt._facecolors = [object.init_color]
-            else:
-                object.scatt._offsets3d = object._offsets3d
-                object.scatt._edgecolor3d = [object.init_color]
-                object.scatt._facecolor3d = [object.init_color]
+            object.reset_own_scatt()
         while self.running:  # Pressing a button will disrupt the play. But not throw errors.
             for object in self.objects:  # update all the velocities
                 object.calculate_net_acc()
@@ -448,11 +411,12 @@ class Physics:
                     break
                 object.update_position()
                 object.update_ring_location() if object.ring else None
-                object.update_scatt_offsets()
+                object.update_scatt_to_current_position()
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()
             self.t = self.t + self.dt
-            self.text.set_text(f"{round(self.t, 1)} seconds") if self.show_time else None
+            self.text.set_text(f"{round(self.t, 1)} seconds") if\
+                self.show_time else None
         else:
             print("Play was just disrupted")
 
@@ -464,9 +428,11 @@ class Physics:
         x, y, z = [data[i] for i in range(3)]
         s = np.random.randint(1, 10, 45)  # Random distribution of star sizes
         if self.num_dims == 3:
-            self.stars = self.ax.scatter3D(x, y, z, c='white', alpha=0.8, marker="*", s=s)
+            self.stars = self.ax.scatter3D(x, y, z, c='white',
+                                           alpha=0.8, marker="*", s=s)
         else:
-            self.stars = self.ax.scatter(x, y, c='white', alpha=0.8, marker="*", s=s)
+            self.stars = self.ax.scatter(x, y, c='white',
+                                         alpha=0.8, marker="*", s=s)
 
     def make_plot(self):
         """Makes the visuals"""
@@ -497,13 +463,7 @@ class Physics:
         text_setter = self.name if self.name else "Predru\'s world"
         self.ax.set_title(text_setter, color=c, fontdict={'fontname': "monospace"})
 
-############################################################################################################################
-############################################################################################################################
-############################################################################################################################
-#Making classes of things that use universe characteristics
-############################################################################################################################
-############################################################################################################################
-############################################################################################################################
+        
 class Object:
     instances = []
 
@@ -532,19 +492,20 @@ class Object:
 
         # Plot related information
         self.color = color
-        self.init_color = color
         self.rel_size = int(rel_size)  # Used as a multiplier of size in plot
         self.cmap = cmap
         self.universe.cmap["cmap"] = cmap
         self.marker = marker
-        self.area = None  # Will be used for 2d plotting
+        self._sizes = None  # Will be used for plotting
+        self._facecolors = None
+        self._edgecolors = None
+        self._offsets3d = None  # Stores first position for 3d ploting
+        self._offsets = None  # Usef for 2d plotting
         self.ax = self.universe.ax  # Facilitates writting
         self.make_ring() if ring else None  # Makes rings
 
         # Attributes used in functions
         self.net_acc = self.universe.zeroes
-        self._offsets3d = None  # Used for 3d plotting
-        self._offsets = None  # Usef for 2d plotting
         self.other_objects = []  # Used to facilitate computations
         self.path_data = None  # Used for recordings
         self.v_data = None  # Used for recordings
@@ -564,16 +525,26 @@ class Object:
             self.__class__.instances.append(self)
             self.universe.objects.append(self)
 
-    def update_scatt_offsets(self):
+    def reset_own_scatt(self):
+        """Get's plot to initial state!!!
+        If you plan on modifying this code. Note how 3d has scat._facecolor3d
+        scatt._edgecolor3d without the 's' in the end as in scat._facecolors"""
+        if self.num_dims == 2:
+            self.scatt._offsets = self._offsets
+            self.scatt._facecolors = self._facecolors
+        else:
+            self.scatt._offsets3d = self._offsets3d
+            self.scatt._edgecolor3d = self._facecolors
+            self.scatt._facecolor3d = self._facecolors
+        self.scatt._sizes = self._sizes  # Still experimental
+
+    def update_scatt_to_current_position(self):
         """Updates scatter data points. Not to be used unless you are Pedro."""
         if self.universe.num_dims == 2:
-            self.data = np.c_[self.position[0], self.position[1]]
-            # Self.data in this shape [[x, y], [x2, y2], ...]
-            self.scatt._offsets = self.data.copy()
-            self._offsets = self.data
+            self.scatt._offsets = [[self.position[0], self.position[1]]]
         else:
-            self.data = ([[self.position[i]] for i in range(3)])
-            self.scatt._offsets3d = tuple(self.data)
+            data = [[self.position[i]] for i in range(3)]
+            self.scatt._offsets3d = data
 
     def check_p_and_v(self):
         """In case there is any issue with inputs. The Parameters become 0"""
@@ -584,18 +555,47 @@ class Object:
             try:
                 self.init_v = self.velocity = np.array(self.init_v)
             except:
-                self.init_v = self.velocity = self.universe.zeroes
+                self.init_v = self.velocity = self.universe.zeroes.copy()
         if types[1] != np.ndarray:
             if types[1] == type(None):
                 self.init_p = self.position = self.universe.zeroes
             try:
                 self.init_p = self.position = np.array(self.init_p)
             except:
-                self.init_p = self.position = self.universe.zeroes
+                self.init_p = self.position = self.universe.zeroes.copy()
         if len(self.init_p) != self.num_dims:
             self.init_p = self.position = self.universe.zeroes
         if len(self.init_v) != self.num_dims:
             self.init_v = self.velocity = self.universe.zeroes
+
+    def get_facecolor_array_from_v_data(self, key):
+        """Returns the list of rgba's needed to give colors to object scatter"""
+        if key == "None":
+            return self._facecolors
+        elif key == 'colorvx':
+            array = self.v_data[:, 0]
+        elif key == 'colorvy':
+            array = self.v_data[:, 1]
+        elif key == 'colorvz':
+            speed = np.sqrt(np.sum(self.v_data**2, axis=1))
+            array = speed if self.num_dims == 2 else self.v_data[:, 2]
+        elif key == "speed":
+            array = np.sqrt(np.sum(self.v_data**2, axis=1))
+        cc_min = np.amin(array)
+        cc_max = np.amax(array)
+        cc = Normalize(cc_min, cc_max)
+        map = ScalarMappable(cc, self.cmap)
+        return map.to_rgba(array)
+
+    def temporarily_hide(self):
+        """Temporarily makes the scatter disappear"""
+        if self.num_dims == 2:
+            self.scatt._offsets = ([[None, None]])  # REmoves extra points
+            self.scatt._facecolors = self._facecolors
+        else:
+            self.scatt._offsets3d = [[], [], []]
+            self.scatt._edgecolor3d = self._facecolors
+            self.scatt._facecolor3d = self._facecolors
 
     def update_ring_location(self):
         """Updates the location of rings around self"""
@@ -603,12 +603,12 @@ class Object:
             if self.num_dims == 2:
                 data = self.x_ring + self.position[0], self.y_ring + self.position[1]
                 data = np.c_[data[0], data[1]]
-                self.ring_scatt.set_offsets(data)
+                self.ring_scatt._offsets = data
             else:
-                data = self.x_ring + self.position[0], self.y_ring + self.position[1], \
-                    self.z_ring + self.position[2]
-                data = [data[i] for i in range(3)]
-                self.ring_scatt._offsets3d = tuple(data)
+                data = self.x_ring + self.position[0], self.y_ring + self.position[1],
+                self.z_ring + self.position[2]
+                data = [[data[i]] for i in range(3)]
+                self.ring_scatt._offsets3d = data
 
     def make_ring(self):
         "Makes a ring around self of using multiple points and pyploy.scatter"
@@ -684,24 +684,27 @@ class Object:
         It is called when the object is first made."""
         marker = self.marker
         cmap = self.cmap
-        color = self.init_color
+        color = self.color
         area = int(self.radius*self.rel_size if self.rel_size else self.radius)
         if self.num_dims == 2:
             self.scatt = self.universe.ax.scatter(self.position[0], self.position[1],
                                                   cmap=cmap, s=area, c=color)
-            self._offsets = self.scatt.get_offsets()
-            self.area = area
+            self._offsets = self.scatt.get_offsets()  # Get's initial point!
             self._offsets3d = None
+            self._facecolors = self.scatt._facecolors
+            self._edgecolors = self.scatt._edgecolors
         elif self.num_dims == 3:
             datas = self.position
             self.scatt = self.universe.ax.scatter(datas[0], datas[1], datas[2], s=area, alpha=0.95,
                                                   marker=marker, cmap=cmap, c=color)
             self._offsets = None
             self._offsets3d = self.scatt._offsets3d
+            self._facecolors = self.scatt._facecolor3d
+            self._edgecolors = self.scatt._edgecolor3d
         else:
             self.scatt = self.universe.ax.scatter([], [])
             print("Weird shit just happened")
-        self.init_color = self.scatt.get_facecolors()[0]
+        self._sizes = self.scatt._sizes.copy()  # For when the plots have to be redrawn
         self.universe.cmap['cmap'] = cmap
         self.universe.colorbar.set_cmap(cmap)
         self.universe.cmap["current_txt"].set_text(cmap)
@@ -770,13 +773,6 @@ class Large_object(Object):
         self.universe.fig.canvas.draw()
         self.universe.fig.canvas.flush_events()
 
-############################################################################################################################
-############################################################################################################################
-############################################################################################################################
-#Making more specific classes 
-############################################################################################################################
-############################################################################################################################
-##################################################################################################################################################################
 
 class Planet(Large_object):  # adapt class to work with Physics
     instances = []
@@ -842,11 +838,7 @@ class Moon(Large_object):
         self.init_p = self.position.copy()
         self.init_v = self.velocity.copy()
         
-        
-############################################################################################################################
-############################################################################################################################
-############################################################################################################################
-universe = Physics(num_dims=2, u_size=2000, show_time=True)
+universe = Physics(num_dims=3, u_size=2000, show_time=True)
 planet = Sun(universe=universe, density=1e14, ring=False, radius=40, cmap="summer")
 # planet2 = Large_object(universe=universe, init_p=(-500, 0, 0), orbit=planet, orbit_rand=True)
 # planet3 = Large_object(universe=universe, init_p=(-300, 0, 0), orbit=planet, orbit_rand=True)
@@ -854,3 +846,4 @@ for x in range(3):
     d = Planet(universe=universe, orbit=planet, orbit_rand=False, rel_size=2, cmap="spring",
                radius=10, density=1e12)
     c = Moon(orbit=d, orbit_rand=False, rel_size=1, cmap="summer", radius=2, rad_orb=20)
+plt.show()
