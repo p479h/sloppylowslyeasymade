@@ -1,7 +1,7 @@
 """
-    This is the first class to be created. It will contain the main figure and axes.
-    It should also contain a function to make all the buttons necessary. It should
-    contain a list with all the important objects inside it."""
+    This is a simulator!
+    if you have no idea what it does, go to the objects page
+    Then go to the "lazy" section. Select either button."""
 
 from matplotlib.pyplot import show
 import tkinter as tk
