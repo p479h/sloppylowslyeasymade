@@ -1,7 +1,7 @@
 """
-    This is a simulator!
-    if you have no idea what it does, go to the objects page
-    Then go to the "lazy" section. Select either button."""
+    This is a simulator that I want help on. This simulator will, one day, be used by physics and math teachers
+    to give students a more visual take on planetary and particle motion.
+    """
 
 from matplotlib.pyplot import show
 import tkinter as tk
@@ -25,7 +25,8 @@ class Physics:
     instances = []  # You never know when you will neeed to acces Physics instances
 
     def __init__(self, u_size=1000, num_dims=2, stars=True, dt=0.01,
-                 show_time=False, name="Predru\'s world", recording=False, t=0, *args, **kwargs):
+                 show_time=False, name="Predru\'s world", recording=False, t=0,
+                 blit = False, *args, **kwargs):
         # Follow Universe characteristics
         self.u_size = u_size  # If universe is a cube, u_size = side length
         self.num_dims = num_dims  # Number of dimensions (2-3)
@@ -55,6 +56,7 @@ class Physics:
         self.canvas = self.fig.canvas
         self.canvas.draw()
         self.background = self.canvas.copy_from_bbox(self.ax.bbox)
+        self.blit = blit #Used for 3d draws. But it has a cost.
 
         # Stuff on the colormaps
         self.cmap["cmaps"] = plt.colormaps()
@@ -170,7 +172,21 @@ class Physics:
 
     def new_make_buttons(self):
         # First define some functions:
-        def close(click): return plt.close(self.widgets_fig), plt.close(self.fig)
+        def close(click):
+            self.running = False
+            try:
+                for object in self.objects:
+                    object.scatt.remove()
+            except:
+                None
+            try:
+                for object in self.objects:
+                    del object
+            except:
+                None
+            self.objects = []
+            plt.close(self.widgets_fig)
+            plt.close(self.fig)
 
         def replay(click):
             self.cmap['buttons']['advance']['button'].ax._visible = False
@@ -410,41 +426,29 @@ class Physics:
             self.radiobuttons[key]['ax'].set_visible(False)
         self.widgets_fig.canvas.draw()
         self.widgets_fig.canvas.flush_events()
-        if self.num_dims == 2:
-            self.text.set_animated(True)
+        self.text.set_animated(True)
+        if self.blit or self.num_dims == 2:
             for object in self.objects:
                 object.reset_own_scatt()
+                object.ring_scatt.set_animated(True) if object.ring else None
                 object.scatt.set_animated(True)
-        else:
-            for object in self.objects:
-                object.reset_own_scatt()
-        if self.num_dims == 3:
+        #Now we check if there are any rings:
+        #This is for optimization purpuses
+        rings = False
+        for object in self.objects:
+            rings = True if object.ring else rings
+        if self.num_dims == 3 and rings and self.blit:
             while self.running:  # Pressing a button will disrupt the play. But not throw errors.
                 for object in self.objects:  # update all the velocities
                     object.calculate_net_acc()
                     object.update_velocity()
                 for object in self.objects:  # updates all the positions
-                    if not self.running:
-                        break
                     object.update_position()
                     object.update_ring_location() if object.ring else None
                     object.update_scatt_to_current_position()
-                self.t = self.t + self.dt
-                self.text.set_text(f"{round(self.t, 1)} seconds") if\
-                    self.show_time else None
-                self.fig.canvas.draw()
-                self.fig.canvas.flush_events()
-        else:
-            while self.running:  # Pressing a button will disrupt the play. But not throw errors.
-                for object in self.objects:  # update all the velocities
-                    object.calculate_net_acc()
-                    object.update_velocity()
-                for object in self.objects:  # updates all the positions
-                    if not self.running:
-                        break
-                    object.update_position()
-                    object.update_ring_location() if object.ring else None
-                    object.update_scatt_to_current_position()
+                    object.ring_scatt.do_3d_projection(self.fig._cachedRenderer) if object.ring else None
+                    object.scatt.do_3d_projection(self.fig._cachedRenderer)
+                    self.ax.draw_artist(object.ring_scatt) if object.ring else None
                     self.ax.draw_artist(object.scatt)
                 self.t = self.t + self.dt
                 self.text.set_text(f"{round(self.t, 1)} seconds") if\
@@ -457,6 +461,108 @@ class Physics:
                 print("Play was disrupted")
                 for object in self.objects:
                     object.scatt.set_animated(False)
+                    object.ring_scatt.set_animated(False) if object.ring else None
+                self.text.set_animated(False) if hasattr(self, "text") else None
+                self.canvas.draw()
+                self.canvas.flush_events()
+
+        elif self.num_dims == 3 and rings and not self.blit:
+            while self.running:  # Pressing a button will disrupt the play. But not throw errors.
+                for object in self.objects:  # update all the velocities
+                    object.calculate_net_acc()
+                    object.update_velocity()
+                for object in self.objects:  # updates all the positions
+                    object.update_position()
+                    object.update_ring_location() if object.ring else None
+                    object.update_scatt_to_current_position()
+                self.t = self.t + self.dt
+                self.text.set_text(f"{round(self.t, 1)} seconds") if\
+                    self.show_time else None
+                self.canvas.draw()
+                self.canvas.flush_events()
+            else:
+                print("Play was disrupted")
+                for object in self.objects:
+                    object.scatt.set_animated(False)
+                    object.ring_scatt.set_animated(False) if object.ring else None
+                self.text.set_animated(False) if hasattr(self, "text") else None
+                self.canvas.draw()
+                self.canvas.flush_events()
+
+        elif self.num_dims == 3 and self.blit and not rings:
+            while self.running:  # Pressing a button will disrupt the play. But not throw errors.
+                for object in self.objects:  # update all the velocities
+                    object.calculate_net_acc()
+                    object.update_velocity()
+                for object in self.objects:  # updates all the positions
+                    object.update_position()
+                    object.update_scatt_to_current_position()
+                    object.scatt.do_3d_projection(self.fig._cachedRenderer)
+                    self.ax.draw_artist(object.scatt)
+                self.t = self.t + self.dt
+                self.text.set_text(f"{round(self.t, 1)} seconds") if\
+                    self.show_time else None
+                self.ax.draw_artist(self.text)
+                self.canvas.blit(self.ax.bbox)
+                self.canvas.flush_events()
+                self.canvas.restore_region(self.background)
+            else:
+                print("Play was disrupted")
+                for object in self.objects:
+                    object.scatt.set_animated(False)
+                    object.ring_scatt.set_animated(False) if object.ring else None
+                self.text.set_animated(False) if hasattr(self, "text") else None
+                self.canvas.draw()
+                self.canvas.flush_events()
+
+        elif self.num_dims == 3:
+            self.temp = []
+            while self.running:  # Pressing a button will disrupt the play. But not throw errors.
+                for object in self.objects:  # update all the velocities
+                    object.calculate_net_acc()
+                    object.update_velocity()
+                for object in self.objects:  # updates all the positions
+                    object.update_position()
+                    object.update_scatt_to_current_position()
+                self.t = self.t + self.dt
+                self.text.set_text(f"{round(self.t, 1)} seconds") if\
+                    self.show_time else None
+                self.canvas.draw()
+                self.canvas.flush_events()
+            else:
+                print("Play was disrupted")
+                for object in self.objects:
+                    object.scatt.set_animated(False)
+                    object.ring_scatt.set_animated(False) if object.ring else None
+                self.text.set_animated(False) if hasattr(self, "text") else None
+                self.canvas.draw()
+                self.canvas.flush_events()
+
+        else:
+            while self.running:  # Pressing a button will disrupt the play. But not throw errors.
+                for object in self.objects:  # update all the velocities
+                    object.calculate_net_acc()
+                    object.update_velocity()
+                for object in self.objects:  # updates all the positions
+                    if not self.running:
+                        break
+                    object.update_position()
+                    object.update_ring_location() if object.ring else None
+                    object.update_scatt_to_current_position()
+                    self.ax.draw_artist(object.scatt)
+                    self.ax.draw_artist(object.ring_scatt) if object.ring else None
+                self.t = self.t + self.dt
+                self.text.set_text(f"{round(self.t, 1)} seconds") if\
+                    self.show_time else None
+                self.ax.draw_artist(self.text)
+                self.canvas.blit(self.ax.bbox)
+                self.canvas.flush_events()
+                self.canvas.restore_region(self.background)
+            else:
+                print("Play was disrupted")
+                for object in self.objects:
+                    object.scatt.set_animated(False)
+                    object.ring_scatt.set_animated(False) if object.ring else None
                 self.text.set_animated(False)
                 self.canvas.draw()
                 self.canvas.flush_events()
@@ -526,6 +632,7 @@ class Physics:
                        radius=10, density=1e12)
             c = Moon(orbit=d, orbit_rand=False, rel_size=1, cmap="summer", radius=2, rad_orb=40)
         plt.show()
+
 
 
 class Object:
@@ -601,6 +708,8 @@ class Object:
             self.scatt._edgecolor3d = self._facecolors
             self.scatt._facecolor3d = self._facecolors
         self.scatt._sizes = self._sizes  # Still experimental
+        if self.ring:
+            self.ring_scatt._offsets = self.ring_location
 
     def update_scatt_to_current_position(self):
         """Updates scatter data points. Not to be used unless you are Pedro."""
@@ -802,7 +911,7 @@ class Large_object(Object):
         if self.orbit:
             r = self.orbit.init_p - self.init_p  # distance vector
             r_ = np.sqrt(sum(r**2))
-            if r_ < (self.radius+self.orbit.radius)*1.5:  # Checks for Large objects on same point
+            if r_ < (self.radius+self.orbit.radius)*1.5 or r_ == 0 or r_ == 0.:  # Checks for Large objects on same point
                 self.init_p = np.zeros(self.num_dims)  # Sets position that eases calculations
                 min = limit/5
                 r_ = np.random.randint(min, limit)  # New distance
@@ -819,15 +928,19 @@ class Large_object(Object):
                     self.init_p[0] = 0
                     self.init_p[1] = r_
             else:
-                v = self.init_v[self.init_v != 0][0]/np.sqrt(2)  # More components
-                self.init_v[0] = v
-                self.init_v[1] = v
-                while np.where(self.init_p != 0)[0][0] not in np.where(self.init_v == 0)[0]:
-                    for x in range(3):
-                        self.init_v[x] = self.init_v[x]*np.random.choice([-1, 1])  # Changes direction
-                        self.init_p[x] = self.init_p[x]*np.random.choice([-1, 1])  # Changes direction
-                    np.random.shuffle(self.init_p)
-                    np.random.shuffle(self.init_v)
+                if self.num_dims == 3:
+                    v = self.init_v[self.init_v != 0][0]/np.sqrt(2)  # More components
+                    self.init_v[0] = v
+                    self.init_v[1] = v
+                    while np.where(self.init_p != 0)[0][0] not in np.where(self.init_v == 0)[0]:
+                        for x in range(self.num_dims):
+                            self.init_v[x] = self.init_v[x]*np.random.choice([-1, 1])  # Changes direction
+                            self.init_p[x] = self.init_p[x]*np.random.choice([-1, 1])  # Changes direction
+                        np.random.shuffle(self.init_p)
+                        np.random.shuffle(self.init_v)
+                else:
+                    self.init_v[0] = v_ideal
+                    self.init_p = self.init_p[::-1]  # Ensures perp velocity
             self.init_v = self.init_v + self.orbit.init_v
             self.init_p = self.init_p + self.orbit.init_p
             self.velocity = self.init_v.copy()
@@ -902,16 +1015,16 @@ class Moon(Large_object):
         self.init_v = self.velocity.copy()
 
 
-#try:
- #   if getattr(sys, 'frozen') and hasattr(sys, '_MEIPASS'):
- #       print('running in a PyInstaller bundle')
- #       bundle_dir = getattr(sys, '_MEIPASS', path.abspath(path.dirname(__file__)))
- #   else:
- #       print('running in a normal Python process')
- #       bundle_dir = path.join(getcwd(), "GUI", "icons")
-#except:
-#    bundle_dir = path.join(getcwd(), "GUI", "icons")
-bundle_dir = None #To use this you need the pictures I used 
+try:
+    if getattr(sys, 'frozen') and hasattr(sys, '_MEIPASS'):
+        print('running in a PyInstaller bundle')
+        bundle_dir = getattr(sys, '_MEIPASS', path.abspath(path.dirname(__file__)))
+    else:
+        print('running in a normal Python process')
+        bundle_dir = path.join(getcwd(), "GUI", "icons")
+except:
+    bundle_dir = path.join(getcwd(), "icons")
+
 
 class Window(tk.Tk):
     """This will be the actual frame where all other actions take place."""
@@ -921,8 +1034,8 @@ class Window(tk.Tk):
         self.geometry(geometry)
         self.title(title)
         self.image_path = bundle_dir
-        #self.icon = tk.PhotoImage(file=path.join(self.image_path, 'planet.png'))
-        #self.iconphoto(False, self.icon)
+        self.icon = tk.PhotoImage(file=path.join(self.image_path, 'planet.png'))
+        self.iconphoto(False, self.icon)
         self.grid_propagate(False)
         self.frames = {}
         self.universe = None  # Placeholder
@@ -949,6 +1062,7 @@ class Controls_container(tk.Frame):
 
 class Universe_page(tk.Frame):
     """The actual page that will contain the universe setters"""
+    instances = []
 
     def __init__(self, window, label="Universe", *args, **kwargs):
         tk.Frame.__init__(self, window, *args, **kwargs)
@@ -958,6 +1072,7 @@ class Universe_page(tk.Frame):
         self.parent = window
         self.name_label = tk.Label(self, text=label, font="sans-serif")
         self.name_label.grid(padx=4, pady=4, row=0, sticky="W")
+        window.frames['Universe page'] = self
 
         self.control_pannel = Controls_container(self)
         self.control_pannel.grid(row=1, column=0, padx=10, sticky='NSEW')
@@ -965,7 +1080,16 @@ class Universe_page(tk.Frame):
         self.control_pannel.columnconfigure([3], minsize=100)
         self.control_pannel.rowconfigure([x for x in range(8)], minsize=2)
 
+        self.beg_mess = """First time using the app"""
+        self.ft_button = tk.Button(self.control_pannel,
+                                   text =self.beg_mess)
+
+        self.control_pannel.rowconfigure([8,9], minsize = 60)
+        self.ft_button.grid(column = 0, row = 9)
+        self.ft_button.config(command = lambda: Physics.threed())
+
         def forward():
+            self.update_v_p_entries()
             if self.parent.universe:
                 if self.parent.universe.num_dims != self.num_dims.get():
                     message = "Please input the correct number of dimensions and update the universe"
@@ -983,53 +1107,73 @@ class Universe_page(tk.Frame):
 
         self.num_dims = tk.IntVar()  # Radiobuttons controlling the num_dims
         self.num_dims.set(2)
-        self.R2d = tk.Radiobutton(self.control_pannel,
+        self.R2d = ttk.Radiobutton(self.control_pannel,
                                   variable=self.num_dims,
-                                  value=2, text='2')  # Show time
+                                  value=2, text='2',
+                                  takefocus = 0)  # Show time
 
-        self.R3d = tk.Radiobutton(self.control_pannel,
+        self.R3d = ttk.Radiobutton(self.control_pannel,
                                   variable=self.num_dims,
-                                  value=3, text='3')  # Show stars
+                                  value=3, text='3',
+                                  takefocus = 0)  # Show stars
         self.R2d.grid(column=2, row=2, sticky='W')
         self.R3d.grid(column=2, row=2, sticky="E")
 
+        self.R2d.configure(command=lambda: [self.num_dims.set(2),
+                                            self.update_u_size(),
+                                            self.forget_blitb()])
+        self.R3d.configure(command=lambda: [self.num_dims.set(3),
+                                            self.update_u_size(),
+                                            self.replace_blitb()])
+
         self.stars = tk.BooleanVar()
-        self.check_stars = tk.Checkbutton(self.control_pannel, text="yes",
-                                          variable=self.stars, onvalue=True, offvalue=False)
+        s2 = ttk.Style()
+        s2.configure('Kim.TCheckbutton', highlightthickness = 0)
+        self.check_stars = ttk.Checkbutton(self.control_pannel, text="yes",
+                                          variable=self.stars, onvalue=True,
+                                          offvalue=False, style = 'Kim.TCheckbutton',
+                                          takefocus = 0)
         self.check_stars.grid(column=2, row=1)
 
         self.show_time = tk.BooleanVar()
-        self.check_time = tk.Checkbutton(self.control_pannel, text="yes",
+        self.check_time = ttk.Checkbutton(self.control_pannel, text="yes",
                                          variable=self.show_time,
-                                         onvalue=True, offvalue=False)
+                                         onvalue=True, offvalue=False,
+                                         takefocus = 0)
         self.check_time.grid(column=2, row=0)
 
         self.t = tk.Entry(self.control_pannel, text="Hello",
-                          width=10)
+                          width=10, relief = "flat")
         self.t.grid(column=2, row=3)
+        self.t.insert(0, 0)
 
-        self.dt = tk.Entry(self.control_pannel, width=10)
+        self.dt = tk.Entry(self.control_pannel, width=10, relief = "flat")
         self.dt.grid(column=2, row=4)
+        self.dt.insert(0, 0.1)
 
-        self.u_size = tk.Entry(self.control_pannel, width=10)
+        self.u_size = tk.Entry(self.control_pannel, width=10, relief = "flat")
+        self.u_size.insert(0, 6000)
         self.u_size.grid(column=2, row=5)
 
-        self.title = tk.Entry(self.control_pannel, width=10)
+        self.title = tk.Entry(self.control_pannel, width=10, relief = "flat")
         self.title.grid(column=2, row=6)
+        Mess = "Predru\'s world"
+        self.title.insert(0, Mess)
 
-        #img = Image.open(path.join(window.image_path, "question.jpg")).resize((16, 16))
-        #self.question_mark = ImageTk.PhotoImage(img)
+        img = Image.open(path.join(window.image_path, "question.png")).resize((25, 25))
+        self.question_mark = ImageTk.PhotoImage(img)
         for x in range(7):
-            help = tk.Button(self.control_pannel, compound="left", bg='blue', text="?")
-            #help.config(image=self.question_mark) this was used for placing a nice image.
+            help = tk.Button(self.control_pannel, compound="left", relief = "flat",
+                            border = 0)#, bg='blue')
+            help.config(image=self.question_mark)
             help.grid(column=3, row=x)
             setattr(self, f"help{x}", help)
         window.update_pages(self)
         self.assign_functions_to_questions()
-        #img = Image.open(path.join(self.parent.image_path, "box.PNG")).resize((150, 150))
-        #self.side_length_img = ImageTk.PhotoImage(img)
+        img = Image.open(path.join(self.parent.image_path, "box.PNG")).resize((150, 150))
+        self.side_length_img = ImageTk.PhotoImage(img)
 
-        self.side_label = tk.Label(self.control_pannel, text="HELLO")#, image=self.side_length_img) You don't have this image either.
+        self.side_label = tk.Label(self.control_pannel, image=self.side_length_img)
         self.side_label.place(x=290, y=160)
 
         def test_button_universe(): return self.make_universe()
@@ -1039,6 +1183,50 @@ class Universe_page(tk.Frame):
                                      bg="green")
         self.test_button.grid(row=0, column=4, rowspan=3)
         self.test_button.config(height=5, width=12)
+
+
+
+        
+        self.blit_label = tk.Label(self.control_pannel, text="3dBlit?",
+                                   font="Verdana 10")
+                    
+        self.blit = tk.BooleanVar()
+        self.blitb=ttk.Checkbutton(self.control_pannel, text="yes",
+                                    variable=self.blit, onvalue=True,
+                                    offvalue=False,
+                                    takefocus = 0)
+        self.help_blitb = tk.Button(self.control_pannel,
+                                    image = self.question_mark,
+                                    relief = "flat",
+                                    border = 0)
+        self.make_helper_blitb()
+        
+
+    def forget_blitb(self):
+        self.blitb.grid_forget()
+        self.blit_label.grid_forget()
+        self.help_blitb.grid_forget()
+
+    def replace_blitb(self):
+        self.blitb.grid(column=2, row=8)
+        self.blit_label.grid(column=0, columnspan=1,
+                             row=8, padx=3, pady=3, sticky = "W")
+        self.help_blitb.grid(column = 3, row = 8,)
+
+    def make_helper_blitb(self):
+        message = \
+                """
+                Checking this box will make
+                3D simulations faster, but
+                rotating the plot will make
+                planets temporarily disappear.
+                It is the price one's gotta pay
+                for performance."""
+        title = "BLIT"
+        func = lambda: tk.messagebox.showinfo(title, message)
+        self.help_blitb.config(command = func)
+        
+        
 
     def assign_functions_to_questions(self):
         message0 = """
@@ -1089,6 +1277,7 @@ class Universe_page(tk.Frame):
         num_dims = universe_page.num_dims.get()
         stars = universe_page.stars.get()
         show_time = universe_page.show_time.get()
+        blit = self.blit.get()
         try:
             t = float(universe_page.t.get()) if eval(universe_page.t.get()) else 0
         except:
@@ -1107,7 +1296,8 @@ class Universe_page(tk.Frame):
             title = "Predru's world"
 
         window.universe = Physics(num_dims=num_dims, u_size=u_size,
-                                  stars=stars, show_time=show_time, name=title, dt=dt, t=t)
+                                  stars=stars, show_time=show_time,
+                                  name=title, dt=dt, t=t, blit = blit)
         print("UNiverse was created!")
         self.test_button.config(text="Reset universe")
         self.delete_universe = tk.Button(universe_page.control_pannel,
@@ -1116,15 +1306,42 @@ class Universe_page(tk.Frame):
         self.delete_universe.grid(row=3, column=4, rowspan=3)
         setters = dict(visible=False)
 
-        def deleter(): return [self.delete_universe.grid_forget(),
-                               setattr(window, "universe", False),
-                               self.test_button.config(text="Make Universe!"),
-                               close()]
+        def deleter():
+            self.delete_universe.grid_forget(),
+            setattr(window, "universe", False),
+            self.test_button.config(text="Make Universe!"),
+            try:
+                plt.close(self.parent.universe.fig)
+            except:
+                None
+            try:
+                plt.close(self.parent.universe.widgets_fig)
+            except:
+                None
         self.delete_universe.config(command=deleter)
+
+    def update_v_p_entries(self):
+        Objects_page = self.parent.frames["Objects page"]
+        v, p = Objects_page.vector_p, Objects_page.vector_v
+        dims = "x y z".split() if self.num_dims.get() == 3 else "x y".split()
+        for dim in dims:
+            v[dim].delete(0, "end")
+            p[dim].delete(0, "end")
+            v[dim].insert(0, "0")
+            p[dim].insert(0, "0")
+
+    def update_u_size(self):
+        self.u_size.delete(0, "end")
+        if self.num_dims.get() == 2:
+            self.u_size.insert(0, 6000)
+
+        elif self.num_dims.get() == 3:
+            self.u_size.insert(0, 2000)
 
 
 class Objects_page(tk.Frame):
     """The actual page that will contain the universe setters"""
+    instances = []
 
     def __init__(self, window, label="Objects", *args, **kwargs):
         tk.Frame.__init__(self, window, *args, **kwargs)
@@ -1134,6 +1351,7 @@ class Objects_page(tk.Frame):
         self.name_label = tk.Label(self, text=label, font="sans-serif")
         self.name_label.grid(padx=4, pady=4, row=0, sticky="W")
         self.parent = window
+        window.frames["Objects page"] = self
 
         # Creating Notebook
         self.Notebook = ttk.Notebook(self)
@@ -1156,48 +1374,58 @@ class Objects_page(tk.Frame):
 
         # Making the actual buttons
         self.category = tk.StringVar()
-        self.category.set("Planet")
-        self._menu_names = {"Sun", "Planet", "Moon", "Other"}
-        self.menu = tk.OptionMenu(self.control_pannel1, self.category,
-                                  *self._menu_names)
+        self._menu_names = {"Sun","Planet", "Moon", "Other"}
+        #There is an empty value because menu is problematic
+        s = ttk.Style()
+        s.configure('Kim.TMenubutton', background = "lightgray")
+        self.menu = ttk.OptionMenu(self.control_pannel1, self.category,
+                                   "Sun",
+                                   *self._menu_names,
+                                   style = 'Kim.TMenubutton',)
         self.menu.grid(column=1, row=0, pady=0, padx=10)
         self.label0 = tk.Label(self.control_pannel1, text='Type of object')
         self.label0.grid(column=0, row=0, pady=2, padx=10)
 
         self.color = tk.StringVar()
-        self.color.set("random")
         self.color_names = "blue, red, pink, purple, black, white, gray, orange, yellow, random".split(", ")
-        self.color_menu = tk.OptionMenu(self.control_pannel1, self.color, *self.color_names)
+        self.color_menu = ttk.OptionMenu(self.control_pannel1, self.color,
+                                         "random", *self.color_names,
+                                        style = 'Kim.TMenubutton', )
         self.color_menu.grid(column=1, row=1, padx=10, pady=0)
 
         self.markers = "o h 8 . * > < ^".split()
         self.marker = tk.StringVar()
         self.marker.set("o")
-        self.marker_menu = tk.OptionMenu(self.control_pannel1, self.marker, *self.markers)
+        self.marker_menu = ttk.OptionMenu(self.control_pannel1, self.marker,
+                                          style = 'Kim.TMenubutton', *self.markers)
         self.marker_menu.grid(column=1, row=2, padx=10, pady=0)
 
         self.ring = tk.BooleanVar()
         self.ring.set(False)
-        self.ring_check = tk.Checkbutton(self.control_pannel1, variable=self.ring,
-                                         onvalue=True, offvalue=False, relief="raised")
+        self.ring_check = ttk.Checkbutton(self.control_pannel1, variable=self.ring,
+                                         onvalue=True, offvalue=False,
+                                         takefocus = 0)
         self.ring_check.grid(column=1, row=3, padx=10, pady=1)
 
         self.charge = tk.IntVar()
         self.charge.set(0)
-        self.charge_negative = tk.Radiobutton(self.control_pannel1, variable=self.charge,
-                                              value=-1, text="-1")
+        self.charge_negative = ttk.Radiobutton(self.control_pannel1, variable=self.charge,
+                                              value=-1, text="-1", takefocus = 0)
         self.charge_negative.grid(column=1, row=4, padx=1, pady=1, sticky="W")
 
-        self.charge_0 = tk.Radiobutton(self.control_pannel1, variable=self.charge,
-                                       value=0, text="0")
+        self.charge_0 = ttk.Radiobutton(self.control_pannel1, variable=self.charge,
+                                       value=0, text="0", takefocus = 0)
         self.charge_0.grid(column=1, row=4, padx=1, pady=1)
 
-        self.charge_positive = tk.Radiobutton(self.control_pannel1, variable=self.charge,
-                                              value=1, text="1")
+        self.charge_positive = ttk.Radiobutton(self.control_pannel1, variable=self.charge,
+                                              value=1, text="1", takefocus = 0)
         self.charge_positive.grid(column=1, row=4, padx=1, pady=1, sticky="E")
 
-        self.charge_density_entry = tk.Entry(self.control_pannel1, width=13)
+        self.charge_density_entry = tk.Entry(self.control_pannel1, width=13, relief = "flat")
         self.charge_density_entry.grid(column=1, row=5, padx=10, pady=0)
+        self.charge_density_entry.insert(0, 1)
+
+        #self.parent.rowconfigure([5, 6, 7, 8], minsize=10)
 
         self.parentesis = dict()
         self.commas = dict()
@@ -1210,37 +1438,40 @@ class Objects_page(tk.Frame):
                 self.parentesis[x].grid(column=1, row=6+int(x/2), sticky="E")
         for x in range(2):
             self.commas[x] = tk.Label(self.control_pannel1, text=",", width=1)
-            self.commas[x].place(x=x*34+130, y=200)
+            self.commas[x].place(x=x*34+130, y=183)
 
             self.commas[x+2] = tk.Label(self.control_pannel1, text=",", width=1)
-            self.commas[x+2].place(x=x*34+130, y=175)
+            self.commas[x+2].place(x=x*34+130, y=158)
 
         self.vector_v = dict()
         self.vector_p = dict()
         self.vector_v["x"], self.vector_v["y"], self.vector_v["z"] =\
-            [tk.Entry(self.control_pannel1, width=2) for x in range(3)]
+            [tk.Entry(self.control_pannel1, width=2, relief = "flat") for x in range(3)]
         self.vector_p["x"], self.vector_p["y"], self.vector_p["z"] =\
-            [tk.Entry(self.control_pannel1, width=2) for x in range(3)]
+            [tk.Entry(self.control_pannel1, width=2, relief = "flat") for x in range(3)]
 
         directions = 'x y z'.split()
         for x in range(3):
-            self.vector_v[directions[x]].place(x=x*32+116, y=175)
-            self.vector_p[directions[x]].place(x=x*32+116, y=200)
+            self.vector_v[directions[x]].place(x=x*32+116, y=154)
+            self.vector_p[directions[x]].place(x=x*32+116, y=180)
 
-        self.radius_entry = tk.Entry(self.control_pannel1, width=13)
+        self.radius_entry = tk.Entry(self.control_pannel1, width=13, relief = "flat")
         self.radius_entry.grid(column=1, row=8, padx=10, pady=0)
+        self.update_r_entry()
 
-        #img = Image.open(path.join(window.image_path, "question.jpg")).resize((16, 16))
-        #self.question_mark = ImageTk.PhotoImage(img)
+        img = Image.open(path.join(window.image_path, "question.png")).resize((20, 20))
+        self.question_mark = ImageTk.PhotoImage(img)
         for x in range(10):
-            help = tk.Button(self.control_pannel1, text="?")#, compound="left", bg='blue')
-            #help.config(image=self.question_mark)
+            help = tk.Button(self.control_pannel1, compound="left", relief = "flat")#, bg='blue')
+            help["border"] = "0"
+            help.config(image=self.question_mark)
             help.grid(column=2, row=x, padx=20)
             setattr(self, f"help{x}", help)
 
-        #img = Image.open(path.join(window.image_path, "question.jpg")).resize((90, 90))
-        #self.question_mark2 = ImageTk.PhotoImage(img)
-        self.help11 = tk.Button(self.control_pannel2, text="?")#, image=self.question_mark2)
+        img = Image.open(path.join(window.image_path, "question.png")).resize((90, 90))
+        self.question_mark2 = ImageTk.PhotoImage(img)
+        self.help11 = tk.Button(self.control_pannel2, image=self.question_mark2,
+                                relief = "flat", border = 0)
         self.help11.config(height=100, width=100)
         self.help11.place(x=300, y=10)
         window.update_pages(self)
@@ -1248,8 +1479,9 @@ class Objects_page(tk.Frame):
         self.density_label = tk.Label(self.control_pannel1, text="Density")
         self.density_label.grid(row=9, column=0, sticky="W", padx=10)
 
-        self.density = tk.Entry(self.control_pannel1, width=13)
+        self.density = tk.Entry(self.control_pannel1, width=13, relief = "flat")
         self.density.grid(row=9, column=1)
+        self.density.insert(0, 100000000000)
 
         self.add_object_button = tk.Button(self.control_pannel1, text="Add object")
         self.add_object_button.config(command=self.make_object)
@@ -1276,16 +1508,21 @@ class Objects_page(tk.Frame):
                     if other.category != "sun":
                         other.orbit = sun
                         other.check_orbit("yes")
-                thing.scatt.ax.figure.canvas.draw()
+                        print("ORBIT CHECKED AND GUD TU GO!")
+                try:
+                    sun.scatt.ax.figure.canvas.draw()
+                    None
+                except:
+                    None
             except:
-                meddge = """To use this you need at least one sun and one planet
-                If you have a sun and planet, this was just an error. Ignore it."""
+                meddge = """To use this you need at least one sun and one planet"""
                 tk.messagebox.showerror("Not enough objects", meddge)
         self._orbit = tk.Button(self.control_pannel1, text="Set all planets in orbit")
-        self._orbit.grid(row=4, column=4, pady=10, padx=5, columnspan=1, rowspan=2)
+        self._orbit.grid(row=4, column=4, pady=10, padx=1, columnspan=1, rowspan=2)
         self._orbit.config(command=make_planets_orbit)
-        help = tk.Button(self.control_pannel1, compound="left", bg='blue')
-        #help.config(image=self.question_mark)
+        help = tk.Button(self.control_pannel1, compound="left", relief = "flat",
+                        border = 0)#, bg='blue')
+        help.config(image=self.question_mark)
         help.grid(row=4, column=5, pady=10, padx=5, columnspan=1, rowspan=2)
         setattr(self, f"help{10}", help)
 
@@ -1387,6 +1624,38 @@ class Objects_page(tk.Frame):
                                       init_p=init_p, init_v=init_v, density=density,
                                       universe=window.universe, rel_size=0.1)
                 object.category = "all"
+            if not hasattr(self, 'objects'):
+                self.objects = []
+            self.objects.append(object)
+            tk.messagebox.showinfo("Success", "Your object was created succesfuly!")
+
+            if not hasattr(self, "delete_object"):
+                self.delete_object = tk.Button(self.control_pannel1, text="Delete last object")
+                self.delete_object_info = tk.Button(self.control_pannel1, text="?")
+                print("message1")
+
+                def object_deleter():
+                    try:
+                        self.objects[-1].scatt.remove()
+                    except:
+                        self.delete_object.place_forget()
+                        self.delete_object_info.place_forget()
+                        delattr(self, "delete_object")
+                        return
+                    self.objects.pop()
+                    self.parent.universe.objects.pop()
+                    tk.messagebox.showinfo("Success", "The last created object was deleted")
+                    if len(self.objects) == 0:
+                        self.delete_object.place_forget()
+                        self.delete_object_info.place_forget()
+                        delattr(self, "delete_object")
+
+                def object_delter_info():
+                    tk.messagebox.showinfo("Deleter", "This function deletes the object that was last created.")
+                self.delete_object.config(command=object_deleter)
+                self.delete_object_info.config(command=object_delter_info)
+                self.delete_object.place(x=290, y=90)
+                self.delete_object_info.place(x=400, y=90)
 
     def assign_functions_to_questions(self):
         message0 = """
@@ -1453,6 +1722,18 @@ class Objects_page(tk.Frame):
             def thing(title, message): return lambda: func(title, message)
             button.config(command=thing(titles[index], messages[index]))
 
+    def update_r_entry(self):
+        obj = self.category.get()
+        self.radius_entry.delete(0, "end")
+        if obj == "Planet":
+            self.radius_entry.insert(0, 10)
+        elif obj == "Moon":
+            self.radius_entry.insert(0, 3)
+        elif obj == "Sun":
+            self.radius_entry.insert(0, 30)
+        elif obj == "Other":
+            self.radius_entry.insert(0, 1)
+
 
 class Last_page(tk.Frame):
     def __init__(self, window, label="Last", *args, **kwargs):
@@ -1473,9 +1754,39 @@ class Last_page(tk.Frame):
 
         def play():
             if self.parent.universe:
+                title = "PLANETS TOO CLOSE"
+                message = """
+                Your planets are too close. You will
+                most likely get an error if you try to
+                run the simulation"""
+                for i1, ob in enumerate(self.parent.universe.objects):
+                    try:
+                        for ob2 in self.parent.universe.objects[i1+1:]:
+                            d = ob.position - ob2.position
+                            d = np.sum(d**2)
+                            if d<ob.radius + ob2.radius:
+                                tk.messagebox.showerror(title,
+                                                        message)
+
+                    except:
+                        None
                 self.parent.universe.fig.canvas.draw()
                 self.parent.universe.fig.canvas.flush_events()
-            show()
+                try:
+                    oo = self.parent.frames['Objects page']
+                    oo.delete_object.place_forget()
+                    oo.delete_object_info.place_forget()
+                    delattr(oo, "delete_object")
+                except:
+                    None
+            try:
+                show()
+            except:
+                None
+            try:
+                plt.close("all")
+            except:
+                None
         self.play_button = tk.Button(self.control_pannel, text="Play!", command=play, bg="green")
         self.play_button.grid(column=0, row=0, padx=10, pady=1)
         self.play_button.config(height=10, width=10)
