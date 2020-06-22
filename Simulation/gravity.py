@@ -1,6 +1,18 @@
 """
     This is a simulator that I want help on. This simulator will, one day, be used by physics and math teachers
     to give students a more visual take on planetary and particle motion.
+
+
+A new MUCH improved version is being rewritten.
+The problem with this one is that we have mpl embeded in the physics and object classes.
+Also, some classes have too many links with other classes. Changing one may break the other. Scaling the project with the current code style is therefore a challenge.
+The new version is based on independence of classes.
+
+Forthermore, the graphics used in this first version are NOT efficient because it uses scatterplots everywhere.
+Butter performance is achieved using patches and Line3D objects.
+
+Lastly, I dont like having to have the pictures in a folder next to this script. The new version will depend only on .py files. The pictures are generated on the Go and occupy no permanent memory in computer.
+
     """
 
 from matplotlib.pyplot import show
