@@ -6,6 +6,10 @@
     Furthermore it has code that builds the physical structure
     of the first page, which contains buttons that will lead
     to the simulations.
+    Author name = Pedro Henrique de Carvalho Ferreira
+    __all__ = "I dont know what to do here yet"
+    __version__ = '0.1'
+    __author__ = 'Pedro Henrique de Carvalho Ferreira'
     """
 import tkinter as tk
 from tkinter import ttk
