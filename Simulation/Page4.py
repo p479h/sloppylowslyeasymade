@@ -1,3 +1,12 @@
+"""
+    This page contains the clock, which is actually a place holder. 
+    When I learn more about quantum physics, this is where I will
+    make simulations about things like electron densities as a function 
+    of radius/angle... For now it just has a nice looking clock that
+    can not be resized because I don't really feel like fixing it. 
+    But if anyone wants it I can fix the problem pretty fast with 
+    a resize callback.
+    """
 from Pages import Page, IMAGES, Main_page, np, ImageTk, ttk, tk
 from Page1 import Page1
 import matplotlib.pyplot as plt
