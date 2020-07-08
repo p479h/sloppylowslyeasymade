@@ -1,5 +1,7 @@
 
-#Used in the entrance page
+"""
+     This file contains all the messages that are used on the 
+     help buttons in the simulator"""
 m1=\
      """
     If you do not provide a name to this page, it will be
