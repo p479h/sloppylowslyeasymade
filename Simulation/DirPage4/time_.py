@@ -1,3 +1,4 @@
+"""This is the code that makes up the clock in page 4"""
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
