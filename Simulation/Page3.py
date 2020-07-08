@@ -1,3 +1,11 @@
+"""
+    This is by far the most disorganized file in this project.
+    The reason is that it does not have many dependencies so I
+    decided to join them all in one file.
+    
+    This is the file that contains the "Hook's law" simulation.
+    """
+
 from Pages import Page, Main_page, IMAGES, ImageTk
 import matplotlib as mpl
 import matplotlib.pyplot as plt
