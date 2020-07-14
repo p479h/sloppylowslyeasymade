@@ -1,6 +1,13 @@
 //First the constants and other values
 let Ø, dØ, t, dt, F, x, y, v, l, m; //Parms and dummy vars
+let Emax; //For the graphs
 let runFlag; //Flag to check if simulation runs
+let data = {
+  Ødata : [],
+  tdata : [],
+  EPdata: [],
+  EKdata: [],
+};
 
 //Now onto the widgets
 let W = 500, H = 400; //Canvas height and width
@@ -30,6 +37,7 @@ function resetValues(){
   v=0; //SPeeed not velocity
   W = 500;
   H = 400;
+  Emax = l*(1-cos(Ø))*F*m/70; //Just for scaling.
 };
 
 /*Now we make a function to attribute values to the
@@ -178,8 +186,21 @@ function draw() {
   if (runFlag == true){
     v -= F*sin(Ø)*dt
     Ø += v*dt/l;
-    t += dt
+    t += dt;
+    ellipse(300, -87, 10, 10);
+    ellipse(200, -(0.5*m*v**2)/Emax+70, 10, 10);
+    
+    fill([250, 49, 50]);
+    ellipse(300, -59, 10, 10);
+    ellipse(220, -(m*l*(1-cos(Ø))*F)/Emax+70, 10, 10);
+    
+    fill([50, 49, 250]);
+    ellipse(300, -32, 10, 10);
+    ellipse(250,-(m*l*(1-cos(Ø))*F+0.5*m*v**2)/Emax+70, 10, 10);
+    fill([250, 249, 250]);
+    ellipse(220, Ø*50+160, 10, 10);
   };
+  
 };
 
 function makeAxis(x, y, w, h, xlabel, ylabel){
