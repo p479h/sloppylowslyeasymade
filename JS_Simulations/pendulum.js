@@ -21,7 +21,7 @@ let fontColor = [10, 10, 10, 255]; //Color fo the font
 function resetValues(){
   //THis function resets constants to default
   slØ.value(3.14/ 4);
-  sldt.value(0.09);
+  sldt.value(0.0001);
   slM.value(150);
   slLen.value(200);
   bg = [0, 0, 0];
@@ -62,7 +62,7 @@ function setup() {
     textFont("Consolas");
 
     //Dt slider first
-    sldt = createSlider(0.001, 1, 0.001, 0.001);
+    sldt = createSlider(0.00001, 0.0001, 0.0001, 0.00001);
     sldt.position(10, 10);
     sldt.style('width', '80px');
 
@@ -184,9 +184,11 @@ function draw() {
   stroke([255, 255, 255])
   ellipse(x, y, m/5, m/5);
   if (runFlag == true){
-    v -= F*sin(Ø)*dt
-    Ø += v*dt/l;
-    t += dt;
+    for (let i = 0; i<2000;i++){
+      v -= F*sin(Ø)*dt
+      Ø += v*dt/l;
+      t += dt;
+    };
     ellipse(300, -87, 10, 10);
     ellipse(200, -(0.5*m*v**2)/Emax+70, 10, 10);
     
