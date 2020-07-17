@@ -21,7 +21,7 @@ let fontColor = [10, 10, 10, 255]; //Color fo the font
 function resetValues(){
   //THis function resets constants to default
   slØ.value(3.14/ 4);
-  sldt.value(0.09);
+  sldt.value(0.0001);
   slM.value(150);
   slLen.value(200);
   bg = [0, 0, 0];
@@ -62,7 +62,7 @@ function setup() {
     textFont("Consolas");
 
     //Dt slider first
-    sldt = createSlider(0.001, 1, 0.001, 0.001);
+    sldt = createSlider(0.00001, 0.0001, 0.0001, 0.00001);
     sldt.position(10, 10);
     sldt.style('width', '80px');
 
@@ -184,6 +184,7 @@ function draw() {
   stroke([255, 255, 255])
   ellipse(x, y, m/5, m/5);
   if (runFlag == true){
+<<<<<<< HEAD
     v -= F*sin(Ø)*dt
     Ø += v*dt/l;
     t += dt;
@@ -194,13 +195,31 @@ function draw() {
     ellipse(300, -59, 10, 10);
     ellipse(220, -(m*l*(1-cos(Ø))*F)/Emax+70, 10, 10);
 
+=======
+    for (let i = 0; i<2000;i++){
+      v -= F*sin(Ø)*dt
+      Ø += v*dt/l;
+      t += dt;
+    };
+    ellipse(300, -87, 10, 10);
+    ellipse(200, -(0.5*m*v**2)/Emax+70, 10, 10);
+    
+    fill([250, 49, 50]);
+    ellipse(300, -59, 10, 10);
+    ellipse(220, -(m*l*(1-cos(Ø))*F)/Emax+70, 10, 10);
+    
+>>>>>>> b94e50d2493012ba29b032ff74f3e569e7fecc4c
     fill([50, 49, 250]);
     ellipse(300, -32, 10, 10);
     ellipse(250,-(m*l*(1-cos(Ø))*F+0.5*m*v**2)/Emax+70, 10, 10);
     fill([250, 249, 250]);
     ellipse(220, Ø*50+160, 10, 10);
   };
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> b94e50d2493012ba29b032ff74f3e569e7fecc4c
 };
 
 function makeAxis(x, y, w, h, xlabel, ylabel){
