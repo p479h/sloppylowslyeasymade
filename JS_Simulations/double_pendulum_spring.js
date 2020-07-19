@@ -48,8 +48,8 @@ function setDefaults(){
   k=0.1;
 
   //Other parameters
-  nskip = 50;
-  dt = 0.002;
+  nskip = 250;
+  dt = 0.001;
   t = 0;
   g = 9.8;
   ekaData = ekbData = tData = [];
@@ -183,13 +183,13 @@ function setup() {
   entries.nskip = createInput("dt", "number");
   entries.nskip.size(80,15);
   entries.nskip.position(0.232*W, 13/15*H);
-  entries.nskip.input(function(){nskip = Number(entries.nskip.value()).toFixed(0)})
+  entries.nskip.input(function(){nskip = Number(entries.nskip.value()).toFixed(0);updated = false})
 
   text("dt/s",0.41*W, 0.85*H);
   entries.dt = createInput("dt", "number");
   entries.dt.size(80,15);
   entries.dt.position(0.41*W, 13/15*H);
-  entries.dt.input(function(){dt = Number(entries.dt.value())});
+  entries.dt.input(function(){dt = Number(entries.dt.value()); updated = false});
 
   ax1= new makeAxis(0.72*W, 0.45*H, 0.25*W, 0.35*H,                      n=4, xlim = [0, 10],ylim = [0, 10],
                     xlabel = 't / s', ylabel = 'eka / J');
@@ -243,7 +243,7 @@ function draw() {
   ax1.yticks();
   ax2.yticks();
 
-  ax1.plot(tData, ekbData, relsize = 5, marker = 'o');
+  ax1.plot(tData, ekaData, relsize = 5, marker = 'o');
   ax2.plot(tData, ekbData, relsize = 5, marker = '-');
 
   translate(W*0.2, H*0.33);
