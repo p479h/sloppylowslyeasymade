@@ -48,13 +48,34 @@ function setDefaults(){
   k=0.1;
 
   //Other parameters
-  nskip = 250;
-  dt = 0.001;
+  nskip = 550;
+  dt = 0.0005;
   t = 0;
   g = 9.8;
   ekaData = ekbData = tData = [];
   updated = false;
+};
 
+function drawSpring(p1, p2,n){
+  p1[0] += ma*15;//Account for size of mass
+  p2[0] -= mb*15;
+  let s = (p2[0] - p1[0])/(n-1);
+  let x = [p1[0], p1[0]+s];
+  let yrat = (p2[1] - p1[1])/n;
+  let y = [p1[1], p1[1]+yrat];
+  for (let i = 2; i<n-1; i++){
+    x[i] = p1[0]+(i-0.5)*s;
+    y[i] = p1[1]+ ((i%2 == 0)? (i-1)*yrat-10:(i-1)*yrat+10);
+  };
+  x[x.length] = p2[0]-s;
+  x[x.length] = p2[0]-0.2*s;
+  y[y.length] = p2[1]-2*yrat;
+  y[y.length] = p2[1]-yrat;
+  strokeWeight(2);
+  stroke(255);
+  for (let i=1; i<x.length; i++){
+    line(x[i-1], y[i-1], x[i], y[i]);
+  };
 };
 
 function dashLine(x0, y0, n, s1, s2, dir){
@@ -78,7 +99,7 @@ function resetBg(){
   let xstop = W/15;
   let ystop = diff = H/16;
   let names = ["la", "ma", "θa","lb", "mb", "θb"];
-  let units = ['pxs', 'kg', 'rad','pxs', 'kg', 'rad'];
+  let units = ['m', 'kg', 'rad','m', 'kg', 'rad'];
   fill(255);
   strokeWeight(0);
   textSize(10);
@@ -88,7 +109,7 @@ function resetBg(){
     text(sliders[names[i]].value(), xstop-W/20+140, ystop+H/100);
     ystop+=diff;
   };
-  text("Spring length/pxs:"+ sliders.li.value(),W/25, 0.84*H);
+  text("Spring length/m:"+ sliders.li.value(),W/25, 0.84*H);
   text("Spring k/Nm-1: "+ sliders.k.value(),W/25, 0.93*H);
   text("nskip: "+nskip,0.232*W, 0.85*H);
   text("dt/s: "+dt,0.41*W, 0.85*H);
@@ -151,7 +172,7 @@ function setup() {
   let xstop = W/15;
   let ystop = diff = H/16;
   let names = ["la", "ma", "θa","lb", "mb", "θb"];
-  let units = ['pxs', 'kg', 'rad','pxs', 'kg', 'rad'];
+  let units = ['m', 'kg', 'rad','m', 'kg', 'rad'];
   fill(255);
   strokeWeight(0);
   textSize(10);
@@ -167,7 +188,7 @@ function setup() {
   };
 
   //Making the slider on the bottom
-  text("Spring length/pxs",W/25, 0.85*H);
+  text("Spring length/m",W/25, 0.85*H);
   sliders.li.style('width', '100px');
   sliders.li.position(W/25, 0.85*H);
   sliders.li.mouseReleased(function(){updated=false;});
@@ -250,6 +271,7 @@ function draw() {
 
   strokeWeight(0.5);
   fill(10, 10, 250,150);
+
   //Drawing tha angle showers
   if (sin(θa)>0){
     arc(0, 0, la/2, la/2, -θa+3.14/2, 3.14/2);
@@ -275,7 +297,8 @@ function draw() {
   strokeWeight(3);
   line(0, 0, xa, ya);
   line(separation, 0, xb, yb);
-  line(xa, ya, xb, yb);
+  //line(xa, ya, xb, yb);
+  drawSpring([xa, ya], [xb, yb],10);
   stroke(250, 250, 250);
   ellipse(xa, ya, ma*30, ma*30);
   ellipse(xb, yb, mb*30, mb*30);
