@@ -340,8 +340,16 @@ function draw() {
 function makeAxis(x, y, w, h, n=5,
                   xlim = [0, 10],
                   ylim = [0, 10],
-                  xlabel = '',
-                  ylabel = ''){
+                  xlabel = 'x',
+                  ylabel = 'y',
+                  xLabelSize = 15,
+                  yLabelSize = 15,
+                  style = 'dark',
+                  strokew = 3,
+                  bg = 0,
+                  tickLabelSize = 12,
+                  font = "Consolas",
+                  sigFig = 0,){
   let self = this;
   self.x = x;
   self.y = y;
@@ -353,6 +361,14 @@ function makeAxis(x, y, w, h, n=5,
   self.ylim = ylim;
   self.xlabel = xlabel;
   self.ylabel = ylabel;
+  self.style = style;
+  self.bg = bg;//background color
+  self.strokew = strokew;//Color of lines and text
+  self.tickLabelSize = tickLabelSize; // size of text
+  self.xLabelSize = xLabelSize;
+  self.yLabelSize = yLabelSize;
+  self.font = font;
+  self.sigFig = sigFig; //Significant figures
   self.construct = function construct(){
     let x = self.x;
     let y = self.y;
@@ -361,8 +377,10 @@ function makeAxis(x, y, w, h, n=5,
     let arrowlen = sqrt(w**2+h**2)/50
     let xlabel = self.xlabel;
     let ylabel = self.ylabel;
-    strokeWeight(3);
-    textSize(12);
+
+    if (self.style == 'dark'){stroke(255);fill(255);}             else{stroke(0);fill(0);};
+    strokeWeight(self.strokew);
+    textSize(self.tickLabelSize);
 
     //Making the spines
     line(x, y, x+w, y);
@@ -373,24 +391,26 @@ function makeAxis(x, y, w, h, n=5,
     triangle(x-arrowlen, y-h, x+arrowlen, y-h, x, y-h-arrowlen*1.5);
 
     //Labels
+    textFont(self.font);
     strokeWeight(0);
-    textSize(14);
-
-    text(xlabel, x+w*0.9, y+5*arrowlen);
-    text(ylabel, x-7*arrowlen, y-h*1.1);
+    textSize(self.xLabelSize);
+    text(xlabel, x+w, y+5*arrowlen);
+    textSize(self.yLabelSize);
+    text(ylabel, x-4*arrowlen, y-h*1.1);
   };
 
   //Xticks function
   self.xticks = function xticks(){
     let xsep = self.w/(self.n+1);
     textAlign(CENTER);
+    textFont(self.font);
     for (let i = 1; i<=self.n; i++){
       let x = self.x+i*xsep;
       let transx = ((x-self.x)/self.w*(self.xlim[1]-self.xlim[0])).toFixed(1);
       strokeWeight(1);
       line(x, self.y-self.ticklen, x, self.y);
       strokeWeight(0);
-      text((Number(transx)+self.xlim[0]).toFixed(1),x, self.y+2*self.ticklen);
+      text((Number(transx)+self.xlim[0]).toFixed(self.sigFig),x, self.y+2*self.ticklen);
     };
     textAlign(LEFT);
   };
@@ -399,13 +419,14 @@ function makeAxis(x, y, w, h, n=5,
   self.yticks = function yticks(){
     let ysep = self.h/(self.n+1);
     textAlign(RIGHT);
+    textFont(self.font);
     for (let i = 1; i<=self.n; i++){
       let y = self.y-self.h+i*ysep;
-      let transy = (-(y-self.y)/self.h*(self.ylim[1]-self.ylim[0])).toFixed(1);
+      let transy = -(y-self.y)/self.h*(self.ylim[1]-self.ylim[0]);
       strokeWeight(1);
       line(self.x, y, self.x+self.ticklen, y);
       strokeWeight(0);
-      text(transy,self.x-self.ticklen, y);
+      text((Number(transy)+self.ylim[0]).toFixed(self.sigFig),self.x-self.ticklen, y);
     };
     textAlign(LEFT);
   };
@@ -446,7 +467,7 @@ function makeAxis(x, y, w, h, n=5,
       strokeWeight(3);
       if (xarr.length>=1){
         for (let i = 1; i<transx.length; i++){
-          line(transx[i-1], self.y, transx[i], transy[i]);
+          line(transx[i-1], transy[i-1], transx[i], transy[i]);
       };
     };
   };
