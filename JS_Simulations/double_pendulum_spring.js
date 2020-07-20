@@ -166,7 +166,7 @@ function setup() {
   sliders.mb = createSlider(0.1, 5, 1, 0.1);
   sliders.θa = createSlider(0.01, 3.14/2, 3.14/4, 0.01);
   sliders.θb = createSlider(0.01, 3.14/2, 3.14/4, 0.01);
-  sliders.k = createSlider(0.01, 2, 0.1, 0.01);
+  sliders.k = createSlider(0.01, 0.4, 0.1, 0.01);
 
   //postioning the sliders
   let xstop = W/15;
@@ -250,6 +250,8 @@ function draw() {
   strokeWeight(1);
 
   //Making the spines and arrows
+  // ax1.drawBg();
+  // ax2.drawBg();
   ax1.construct();
   ax2.construct();
   stroke(255);
@@ -397,6 +399,18 @@ function makeAxis(x, y, w, h, n=5,
     text(xlabel, x+w, y+5*arrowlen);
     textSize(self.yLabelSize);
     text(ylabel, x-4*arrowlen, y-h*1.1);
+  };
+
+
+  //Draws a rectangle underneath the plot for better
+    //contrast. It is not really a good function but it
+    //can help a little.
+  self.drawBg = function drawBg(){
+    strokeWeight(1);
+    if (self.style == 'dark'){
+      fill(0);stroke(255)}else{fill(255);stroke(0)};
+    (self.style == 'dark')? fill(0):fill(250);
+    rect(self.x-self.w*0.2, self.y+self.h*0.2, self.w*1.3, -self.h*1.4);
   };
 
   //Xticks function
