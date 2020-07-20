@@ -3,7 +3,6 @@ try:
     star_icon = Image.open(r"star_icon.png")
 except:
     import time
-    import pandas as pd
     import matplotlib as mpl
     import matplotlib.pyplot as plt
 

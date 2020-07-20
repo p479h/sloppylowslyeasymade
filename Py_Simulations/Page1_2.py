@@ -1,3 +1,9 @@
+import os
+try:
+    os.chdir(r'Py_simulations')
+except:
+    None
+#print(os.getcwd())
 from Pages import Page, IMAGES, Main_page, ImageTk, plt, mpl
 from Page1 import Page1
 from Page1_1 import Page1_1

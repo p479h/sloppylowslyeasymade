@@ -40,7 +40,8 @@ function setDefaults(){
   xa = sin(θa)*la; ya = yb = cos(θa)*la;
   xb = xa+separation;
   va = vb = 0;
-  ekmaxa = ekmaxb=eka=ekb = 0;
+  ekmaxa = 0; ekmaxb= 0;
+  eka=0; ekb = 0;
 
   //Parameters of the spring
   li = separation;
@@ -57,22 +58,39 @@ function setDefaults(){
 };
 
 function drawSpring(p1, p2,n){
-  p1[0] += ma*15;//Account for size of mass
-  p2[0] -= mb*15;
-  let s = (p2[0] - p1[0])/(n-1);
-  let x = [p1[0], p1[0]+s];
-  let yrat = (p2[1] - p1[1])/n;
-  let y = [p1[1], p1[1]+yrat];
-  for (let i = 2; i<n-1; i++){
-    x[i] = p1[0]+(i-0.5)*s;
-    y[i] = p1[1]+ ((i%2 == 0)? (i-1)*yrat-10:(i-1)*yrat+10);
+  //n is the number of points in the chain!
+  p1[0]+=ma*10;
+  p2[0]-=mb*10;
+  let L = sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2);
+  co = (p2[0]-p1[0])/L;
+  si = (p2[1]-p1[1])/L;
+  let s = L/(n);
+
+  //beggining and end of spring
+  let x = [0, s];
+  let y = [0, 0];
+  x[n] = L-s;
+  x[n+1] = L;
+  y[n] = 0;
+  y[n+1] = 0;
+
+  //body of spring
+  for (let i = 2; i<n; i++){
+    x[i] = (i-0.5)*s;
+    y[i] = (i%2 == 0)? -10:+10;
   };
-  x[x.length] = p2[0]-s;
-  x[x.length] = p2[0]-0.2*s;
-  y[y.length] = p2[1]-2*yrat;
-  y[y.length] = p2[1]-yrat;
+
+  //Rotating and translating
+  for (let i = 0 ; i<x.length;i++){
+    let x0 = x[i], y0 = y[i];
+    x[i] = x0*co-y0*si+p1[0];
+    y[i] = y0*co+x0*si+p1[1];
+  };
+
   strokeWeight(2);
-  stroke(255);
+  stroke(250);
+
+  //Drawing
   for (let i=1; i<x.length; i++){
     line(x[i-1], y[i-1], x[i], y[i]);
   };
@@ -232,6 +250,8 @@ function draw() {
   if (updated == false){updateValues()};
   resetBg();
 
+
+  //MAKING THE PLOT!
   //Updating limits
   ax1.xlim = [tData[0], t];
   ax2.xlim = [tData[0], t];
@@ -322,6 +342,7 @@ function draw() {
     yb = lb*cos(θb);
     t+=dt;
   };
+
   //Kinetic energy
   eka = 1/2*ma*va**2;
   ekb = 1/2*mb*vb**2;

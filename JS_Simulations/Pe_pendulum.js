@@ -172,9 +172,9 @@ function draw() {
   line(0, 4*l/20, 0, 5*l/20);
   line(0, 6*l/20, 0, 7*l/20);
 
-  makeAxis(170, 90, 105, 85, "t", "E");
+  makeAxis(170, 90, 105, 85, "", "E");
   strokeWeight(2);
-  makeAxis(170, 210, 105, 85, "t", "Ø");
+  makeAxis(170, 210, 105, 85, "", "Ø");
   textSize(13);
   strokeWeight(2);
 
@@ -184,42 +184,35 @@ function draw() {
   stroke([255, 255, 255])
   ellipse(x, y, m/5, m/5);
   if (runFlag == true){
-<<<<<<< HEAD
     v -= F*sin(Ø)*dt
     Ø += v*dt/l;
     t += dt;
-    ellipse(300, -87, 10, 10);
     ellipse(200, -(0.5*m*v**2)/Emax+70, 10, 10);
 
-    fill([250, 49, 50]);
-    ellipse(300, -59, 10, 10);
+    fill([250, 250, 0]);
     ellipse(220, -(m*l*(1-cos(Ø))*F)/Emax+70, 10, 10);
 
-=======
+
     for (let i = 0; i<2000;i++){
       v -= F*sin(Ø)*dt
       Ø += v*dt/l;
       t += dt;
     };
-    ellipse(300, -87, 10, 10);
+    ellipse(310, -87, 10, 10);
     ellipse(200, -(0.5*m*v**2)/Emax+70, 10, 10);
-    
-    fill([250, 49, 50]);
-    ellipse(300, -59, 10, 10);
+
+    fill([250, 0, 0]);
+    ellipse(310, -59, 10, 10);
     ellipse(220, -(m*l*(1-cos(Ø))*F)/Emax+70, 10, 10);
-    
->>>>>>> b94e50d2493012ba29b032ff74f3e569e7fecc4c
-    fill([50, 49, 250]);
-    ellipse(300, -32, 10, 10);
+
+    fill([0, 0, 250]);
+    ellipse(310, -32, 10, 10);
     ellipse(250,-(m*l*(1-cos(Ø))*F+0.5*m*v**2)/Emax+70, 10, 10);
     fill([250, 249, 250]);
     ellipse(220, Ø*50+160, 10, 10);
   };
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> b94e50d2493012ba29b032ff74f3e569e7fecc4c
+
 };
 
 function makeAxis(x, y, w, h, xlabel, ylabel){
