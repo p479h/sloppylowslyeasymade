@@ -264,7 +264,7 @@ function draw() {
   ax1.yticks();
   ax2.yticks();
 
-  ax1.plot(tData, ekaData, relsize = 5, marker = 'o');
+  ax1.plot(tData, ekaData, relsize = 5, marker = '-');
   ax2.plot(tData, ekbData, relsize = 5, marker = '-');
 
   translate(W*0.2, H*0.33);
