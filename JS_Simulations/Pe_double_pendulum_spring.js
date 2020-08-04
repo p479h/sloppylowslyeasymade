@@ -57,14 +57,14 @@ function setDefaults(){
   updated = false;
 };
 
-function drawSpring(p1, p2,n){
+function drawSpring(p1, p2,n=13){
   //n is the number of points in the chain!
   p1[0]+=ma*10;
   p2[0]-=mb*10;
   let L = sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2);
   co = (p2[0]-p1[0])/L;
   si = (p2[1]-p1[1])/L;
-  let s = L/(n);
+  let s = L/(n+1);
 
   //beggining and end of spring
   let x = [0, s];
@@ -76,8 +76,8 @@ function drawSpring(p1, p2,n){
 
   //body of spring
   for (let i = 2; i<n; i++){
-    x[i] = (i-0.5)*s;
-    y[i] = (i%2 == 0)? -10:+10;
+    x[i] = i*s;
+    y[i] = (i%2 == 0)? -12:+40;
   };
 
   //Rotating and translating
@@ -90,10 +90,15 @@ function drawSpring(p1, p2,n){
   strokeWeight(2);
   stroke(250);
 
-  //Drawing
-  for (let i=1; i<x.length; i++){
-    line(x[i-1], y[i-1], x[i], y[i]);
+  ////Drawing
+  // for (let i=1; i<x.length; i++){
+  //   line(x[i-1], y[i-1], x[i], y[i]);
+  // };
+  fill(0);
+  for (let i=0; i<x.length-2; i+=2){
+    bezier(x[i], y[i], x[i+1], y[i+1], x[i+2], y[i+2],x[i+2], y[i+2]);
   };
+
 };
 
 function dashLine(x0, y0, n, s1, s2, dir){
@@ -314,13 +319,13 @@ function draw() {
   textSize(14);
 
   //Drawing moving objects
+  drawSpring([xa, ya], [xb, yb]);
   fill(60, 60, 250);
   stroke(240, 240, 250);
   strokeWeight(3);
   line(0, 0, xa, ya);
   line(separation, 0, xb, yb);
   //line(xa, ya, xb, yb);
-  drawSpring([xa, ya], [xb, yb],10);
   stroke(250, 250, 250);
   ellipse(xa, ya, ma*30, ma*30);
   ellipse(xb, yb, mb*30, mb*30);

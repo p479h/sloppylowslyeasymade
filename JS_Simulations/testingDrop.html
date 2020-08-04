@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/addons/p5.dom.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/addons/p5.sound.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <meta charset="utf-8" />
+
+  </head>
+  <body>
+    <script type="text/javascript">
+let canvas;
+console.log(canvas);
+function setup(){
+  canvas = createCanvas(400, 400);
+  console.log(document.body);
+  makeBar(canvas);
+};
+
+let flag=false;
+function draw(){
+  background("black");
+  if (!flag){console.log(document.innerHTML);
+            flag=true;}
+};
+
+function makeBar(canvas){
+  let div = document.createElement("div");
+
+  //Creating a canvas container for easier placement!!!
+  let canvasContainer;//Only ysed if canvas is in body
+  if (document.body == canvas.elt.parentElement){
+    canvasContainer = document.createElement("div");
+    canvasContainer.id = "VeryUniqueOriginalCanvasContainer";
+    canvas.elt.parentNode.removeChild(canvas.elt);
+    //Leaving canvas without a parent for the "if" statement
+  };
+
+  div.innerHTML =
+    `
+      <div class="ddContainer">
+        <!--Container holds THE ENTIRE MENU
+        Initially it only displays Root-->
+        <input type="checkbox" id="Root"/>
+        <label for="Root" style = 'font-size: 1.5em; margin-left: 1em;'>Options</label>
+
+        <!--Now we add all levels under Root-->
+        <div class="dd">
+          <!--Inside we now have a new div for each element
+          This new div holds many values-->
+          <div class="item"><!--First clickable item inside-->
+            <input type='checkbox' id="A"/>
+            <label for="A">A</label>
+            <ul><!--This is where we put wids-->
+              <li>This is an item</li>
+              <li>This is an item</li>
+              <li>This is an item</li>
+            </ul>
+          </div>
+
+          <!--New list BELOW-->
+          <div class="item">
+            <input type="checkbox" id="B"/>
+            <label for="B">B</label>
+
+            <!--Now the items-->
+            <ul>
+              <li>This is an item</li>
+              <li>This is an item</li>
+              <li>This is an item</li>
+            </ul><!--End of items-->
+          </div><!--End of item-->
+
+          <!--Now we make a deep one-->
+          <div class="item">
+            <input type="checkbox" id="C"/>
+            <label for = "C">C</label>
+
+            <ul><!--Main listC-->
+              <li><div class="item"><!--Element with another list inside-->
+                <input type="checkbox" id="C1"/>
+                <label for="C1">C1</label>
+                <ul>
+                  <li>HELLO</li>
+                  <li>HELLO</li>
+                  <li>Hello</li>
+                </ul>
+              </div></li>
+
+
+              <li><div class="item"><!--Element with another list inside-->
+                <input type="checkbox" id="C2"/>
+                <label for="C2">C2</label>
+              </div></li>
+            </ul>
+          </div>
+
+          <!--More divs can be added here-->
+        </div>
+      </div>
+  `
+  div.id = "SomeCreativeID";
+  if (null == canvas.elt.parentElement){
+    canvasContainer.appendChild(div);
+    canvasContainer.appendChild(canvas.elt);
+    canvas.elt.style.position = 'relative';
+    document.body.appendChild(canvasContainer);
+  }
+  else{
+    canvas.elt.parentElement.appendChild(div);
+  };
+
+
+
+  //NOW THE CSS
+  var style = document.createElement('style');
+style.innerHTML = `
+/*Making it go inside the canvas*/
+#SomeCreativeID{
+  position: absolute;
+  display: flex;
+  min-width: 40%;
+  max-height: 60%;
+  z-index: 9999;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin-left: auto;
+  right: 0%;
+}
+#SomeCreativeID div{
+  padding-left: 0;
+}
+
+#VeryUniqueOriginalCanvasContainer{
+  position:relative;
+  background-color: blue;
+  display: inline-flex;
+}
+
+/*functionality*/
+.item, li, label{
+  cursor: pointer;
+  z-index: 3;
+}
+
+/*Functionality*/
+.ddContainer input[type="checkbox"], .item ul, .dd{
+  display: none;
+}
+
+#Root:checked ~ .dd, .item input:checked ~ ul{
+  display: block;
+}
+
+#Root:checked ~ label{
+  background-color: #222;
+}
+
+#Root:checked ~ label::before, .item input:checked ~ label::before{
+  transform: rotate(-90deg);
+  display: inline-block;
+  transition-duration: .2s;
+  transform: rotate(-180deg);
+}
+
+#Root:not(:checked) ~ label::before, .item input:not(:checked)~label::before{
+  transform: rotate(-90deg);
+  display: inline-block;
+  transition-duration: .2s;
+}
+
+/*Making it pretty*/
+.ddContainer{
+  background-color: #111;
+  display: inline-flex;
+  width: 100%;
+  flex-direction: column;
+  font-family: Monospace;
+  font-size: 1.1em;
+  color:white;
+}
+
+div.item label, .item label{
+  font-weight: 600;
+  font-size: 1.12em;
+  padding-left: 0.1em;
+  background-color: #222;
+  display: flex;
+  border-bottom: 0.05em solid #333;
+  border-top: 0.05em solid #333;
+  border-radius: 0.2em;
+}
+
+
+div.item ul li{
+  border-radius: 0.2em;
+}
+
+
+div.item > ul > li{
+  background: #222;
+}
+
+.item>label::before, .ddContainer>label::before{
+  content: "‹";
+  margin-left: 0.2em;
+  margin-right: 0.2em;
+}
+
+
+.item>ul{
+  list-style: none;
+  padding-left: 4%;
+  margin: 0;
+}
+
+.item>ul>li:hover, .item:hover ~ ul, .item>label:hover{
+  background-color: #333;
+}
+
+ label:hover{
+  transform: scale(1.01);
+  background-color: #333;
+}
+
+/* width */
+#SomeCreativeID::-webkit-scrollbar{
+  width: .5em;
+}
+
+/* Handle */
+#SomeCreativeID::-webkit-scrollbar-thumb {
+  background: #666;
+}
+
+/* Handle on hover */
+#SomeCreativeID::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}
+  `;
+document.head.appendChild(style);
+};
+
+</script>
+</body>
+</html>
