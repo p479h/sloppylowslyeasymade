@@ -6,34 +6,43 @@ function setup() {
 
   plot = new makePlot(canvas);
   plot.build([0, 0, 300, 300]);
-  plot.setAxLimits([0,200],[0,200]);
-  let i=0;
+
+  plot.setAxLimits([0, 100], [0, 200]);
+  let i = 0;
   canvas.background(250, 0, 0);
   plot.startLine([10, 100]);
-  while (i++<1000) {
-    plot.addLineTo([10+i/10, sin(i/10)*10+100]);
+  plot.axes.ellipse(100, 100, 20, 20);
+  plot.setAxLimits([0, 100], [0, 200]);
+  while (i++ < 1000) {
+    plot.addLineTo([10 + i / 50, sin(i / 100) * 20 + 100]);
     plot.axes.context.stroke();
   };
-  plot.setAxLimits([0,150],[0,150]);
-  while (i++<2000) {
-    plot.addLineTo([10+i/10, sin(i/10)*10+100]);
-    plot.axes.context.stroke();
-  };
-  background(0, 0, 255);
   plot.display();
+
+//   plot.setAxLimits([0, 250], [0, 150]);
+//   while (i++ < 2000) {
+//     plot.addLineTo([10 + i / 20, sin(i / 20) * 20 + 100]);
+//     // plot.axes.ellipse(...[10 + i / 10, sin(i / 20) * 20 + 80], .001, 001);
+//     plot.axes.context.stroke();
+//   };
+//   background(0, 0, 255);
+//   plot.display();
+//   i = 0;
+//   setInterval(
+//     () => {
+//       plot.setAxLimits([i - 100, i++], [0, 150]);
+//       plot.display();
+//     }, 100);
 };
 
-function draw() {
-};
+function draw() {};
 
 
-function makePlot(canvas){
+function makePlot(canvas) {
   //First let's declare some global variables for a plot
   //This is mainly for readibility
   let figure, axes, bbox;
-  let contextPoint = this.contextPoint = [0, 0];//Used for continuity!
-
-  pixelDensity(1);//Glitches in editor
+  let contextPoint = this.contextPoint = [0, 0]; //Used for continuity!
 
   /*bbox = [x0, y0, x1, y1];
   x0 and y0 lie at the top left corner
@@ -43,35 +52,31 @@ function makePlot(canvas){
   this.ylim = [0, 100];
 
   this.build = (bbox) => {
-    this.bbox = (arguments.length > 0)? bbox:[0, 0, 0, 0];
+    this.bbox = (arguments.length > 0) ? bbox : [0, 0, 0, 0];
     //Sets bbox for display later
+    // pixelDensity(2); //Glitches in editor
 
-    figure = createGraphics(300, 300, canvas);
+    figure = createGraphics(300, 300);
     figure.context = figure.elt.getContext("2d");
     figure.bg = "rgba(0, 0, 0, 1)";
     figure.background(figure.bg);
     this.figure = figure;
 
-    axes = createGraphics(600, 600, figure);
+    axes = createGraphics(500, 500);
     axes.context = axes.elt.getContext("2d");
     axes.bg = "rgba(255, 0, 0, 1)";
     axes.background(axes.bg);
-    axes.elt.imageSmoothingEnabled =false;
-    figure.elt.imageSmoothingEnabled =false;
+    axes.context.imageSmoothingEnabled = false;
+    figure.context.imageSmoothingEnabled = false;
     this.axes = axes;
 
+    figure.context.save();
+    axes.context.save();
   };
 
   this.display = () => {
     let ctx = canvas.elt.getContext("2d");
-    let ctx2 = figure.context;
-    let ctx3 = axes.context;
     ctx.save();
-    ctx2.save();
-    // ctx3.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx2.setTransform(1, 0, 0, 1, 0, 0);
-    // ctx3.setTransform(1, 0, 0, 1, 0, 0);
 
     this.figure.image(axes,
       this.figure.width / 10,
@@ -84,26 +89,25 @@ function makePlot(canvas){
       this.bbox[2] - this.bbox[0],
       this.bbox[3] - this.bbox[1]);
     ctx.restore();
-    ctx2.restore();
-    ctx3.restore();
   };
 
-  this.setAxLimits = (xlim=[10, 100], ylim=[0, 100]) => {
+  this.setAxLimits = (xlim = [10, 100], ylim = [0, 100]) => {
     /*This is just a bunch of scaling and translating
     I never had linear algebra so I don't know the terms*/
     let xdist = xlim[1] - xlim[0];
     let ydist = ylim[1] - ylim[0];
-    axes.context.setTransform(1, 0, 0, 1, 0, 0);
-    axes.context.scale(axes.width/xdist, -axes.height/ydist);
+    axes.context.restore();
+    axes.context.save();
+    axes.context.scale(axes.width / xdist, -axes.height / ydist);
     axes.context.translate(-xlim[0], -ydist);
 
     /*The comment is for TESTING in case a glitch is found*/
-//     axes.ellipse(50, 10, 5, 5);
-//     axes.fill(0, 250, 0);
-//     axes.ellipse(50, 20, 5, 5);
+    //     axes.ellipse(50, 10, 5, 5);
+    //     axes.fill(0, 250, 0);
+    //     axes.ellipse(50, 20, 5, 5);
 
-//     axes.fill(0, 0, 0, 0);
-//     axes.rect(xlim[0]*1.1, ylim[0]*1.1, xdist*0.8, ydist*0.8)
+    //     axes.fill(0, 0, 0, 0);
+    //     axes.rect(xlim[0]*1.1, ylim[0]*1.1, xdist*0.8, ydist*0.8)
     /*End of testing*/
 
 
@@ -113,12 +117,10 @@ function makePlot(canvas){
     axes.scale(1, -1);
 
     axes.context.drawImage(axes.elt,
-                           this.xlim[0], -this.ylim[1],
-                           this.xlim[1]-this.xlim[0],
-                           this.ylim[1]-this.ylim[0]);
-
+      this.xlim[0], -this.ylim[1],
+      this.xlim[1] - this.xlim[0],
+      this.ylim[1] - this.ylim[0]);
     axes.context.restore();
-
 
     //We also need to avoid ANNYING connections between old and new lines we draw
     axes.context.beginPath();
@@ -126,7 +128,8 @@ function makePlot(canvas){
     axes.context.moveTo(...this.contextPoint);
 
     //Now we don't need the old lims anymore
-    this.xlim = xlim; this.ylim = ylim;
+    this.xlim = xlim;
+    this.ylim = ylim;
   };
 
   this.addLineTo = (arr) => {
@@ -141,9 +144,11 @@ function makePlot(canvas){
   };
 
   this.plot = (arr) => {
-    if (arr.length == 0){return null};
+    if (arr.length == 0) {
+      return null
+    };
     axes.context.moveTo(...arr[0]);
-    for (let Point in arr){
+    for (let Point in arr) {
       axes.context.lineTo(...Point);
     };
     axes.context.stroke();
