@@ -3,12 +3,24 @@ let W = H = 400;
 
 function setup() {
   canvas = createCanvas(W, H);
-  background(0, 0, 255);
 
   plot = new makePlot(canvas);
   plot.build([0, 0, 300, 300]);
+  plot.setAxLimits([0,200],[0,200]);
+  let i=0;
+  canvas.background(250, 0, 0);
+  plot.startLine([10, 100]);
+  while (i++<1000) {
+    plot.addLineTo([10+i/10, sin(i/10)*10+100]);
+    plot.axes.context.stroke();
+  };
+  plot.setAxLimits([0,150],[0,150]);
+  while (i++<2000) {
+    plot.addLineTo([10+i/10, sin(i/10)*10+100]);
+    plot.axes.context.stroke();
+  };
+  background(0, 0, 255);
   plot.display();
-
 };
 
 function draw() {
@@ -19,6 +31,7 @@ function makePlot(canvas){
   //First let's declare some global variables for a plot
   //This is mainly for readibility
   let figure, axes, bbox;
+  let contextPoint = this.contextPoint = [0, 0];//Used for continuity!
 
   pixelDensity(1);//Glitches in editor
 
@@ -38,7 +51,6 @@ function makePlot(canvas){
     figure.bg = "rgba(0, 0, 0, 1)";
     figure.background(figure.bg);
     this.figure = figure;
-    console.log(this);
 
     axes = createGraphics(600, 600, figure);
     axes.context = axes.elt.getContext("2d");
@@ -52,14 +64,14 @@ function makePlot(canvas){
 
   this.display = () => {
     let ctx = canvas.elt.getContext("2d");
-    let ctx2 = this.figure.context;
-    let ctx3 = this.axes.context;
+    let ctx2 = figure.context;
+    let ctx3 = axes.context;
     ctx.save();
     ctx2.save();
-    ctx3.save();
-    ctx.resetTransform();
-    ctx2.resetTransform();
-    ctx3.resetTransform();
+    // ctx3.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx2.setTransform(1, 0, 0, 1, 0, 0);
+    // ctx3.setTransform(1, 0, 0, 1, 0, 0);
 
     this.figure.image(axes,
       this.figure.width / 10,
@@ -67,7 +79,6 @@ function makePlot(canvas){
       this.figure.width * 0.8,
       this.figure.height * 0.8);
 
-    console.log(this.bbox);
     image(this.figure,
       this.bbox[0], this.bbox[1],
       this.bbox[2] - this.bbox[0],
@@ -77,31 +88,60 @@ function makePlot(canvas){
     ctx3.restore();
   };
 
-  this.setAxLimits = (xlim=[0, 100], ylim=[0, 100]) => {
-    this.xlim = xlim; this.ylim = ylim;
+  this.setAxLimits = (xlim=[10, 100], ylim=[0, 100]) => {
+    /*This is just a bunch of scaling and translating
+    I never had linear algebra so I don't know the terms*/
     let xdist = xlim[1] - xlim[0];
     let ydist = ylim[1] - ylim[0];
-    axes.context.resetTransform();
-    axes.context.drawImage(axes.elt, 0, 0);
-    axes.scale(axes.width / xdist, -axes.height / ydist);
-    axes.translate(-xlim[0], -ydist);
+    axes.context.setTransform(1, 0, 0, 1, 0, 0);
+    axes.context.scale(axes.width/xdist, -axes.height/ydist);
+    axes.context.translate(-xlim[0], -ydist);
+
+    /*The comment is for TESTING in case a glitch is found*/
+//     axes.ellipse(50, 10, 5, 5);
+//     axes.fill(0, 250, 0);
+//     axes.ellipse(50, 20, 5, 5);
+
+//     axes.fill(0, 0, 0, 0);
+//     axes.rect(xlim[0]*1.1, ylim[0]*1.1, xdist*0.8, ydist*0.8)
+    /*End of testing*/
+
+
+    //Now we use the OLD lims to resize the current drawing
+    //Negative signs are odd because of coordinate system
+    axes.context.save();
+    axes.scale(1, -1);
+
+    axes.context.drawImage(axes.elt,
+                           this.xlim[0], -this.ylim[1],
+                           this.xlim[1]-this.xlim[0],
+                           this.ylim[1]-this.ylim[0]);
+
+    axes.context.restore();
+
+
+    //We also need to avoid ANNYING connections between old and new lines we draw
+    axes.context.beginPath();
+    axes.context.closePath();
+    axes.context.moveTo(...this.contextPoint);
+
+    //Now we don't need the old lims anymore
+    this.xlim = xlim; this.ylim = ylim;
   };
 
-  this.addLineTo = (Point) => {
+  this.addLineTo = (arr) => {
     //Draws a line between the last drawn point and point
-    this.setAxLimits(this.xlim, this.ylim);
-    axes.context.lineTo(...Point);
-    axes.stroke();
+    axes.context.lineTo(...arr);
+    axes.context.stroke();
+    this.contextPoint = arr;
   };
 
-  this.startLine = (Point) => {
-    this.setAxLimits(this.xlim, this.ylim);
-    axes.context.moveTo(Point);
+  this.startLine = (arr) => {
+    axes.context.moveTo(...arr);
   };
 
   this.plot = (arr) => {
     if (arr.length == 0){return null};
-    this.setAxLimits(this.xlim, this.ylim);
     axes.context.moveTo(...arr[0]);
     for (let Point in arr){
       axes.context.lineTo(...Point);
