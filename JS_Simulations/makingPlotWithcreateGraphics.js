@@ -11,28 +11,19 @@ function setup() {
   let i = 0;
   canvas.background(250, 0, 0);
   plot.startLine([10, 100]);
-  plot.axes.ellipse(100, 100, 20, 20);
-  plot.setAxLimits([0, 100], [0, 200]);
   while (i++ < 1000) {
     plot.addLineTo([10 + i / 50, sin(i / 100) * 20 + 100]);
-    plot.axes.context.stroke();
   };
   plot.display();
 
-//   plot.setAxLimits([0, 250], [0, 150]);
-//   while (i++ < 2000) {
-//     plot.addLineTo([10 + i / 20, sin(i / 20) * 20 + 100]);
-//     // plot.axes.ellipse(...[10 + i / 10, sin(i / 20) * 20 + 80], .001, 001);
-//     plot.axes.context.stroke();
-//   };
-//   background(0, 0, 255);
-//   plot.display();
-//   i = 0;
-//   setInterval(
-//     () => {
-//       plot.setAxLimits([i - 100, i++], [0, 150]);
-//       plot.display();
-//     }, 100);
+
+  setInterval(
+    () => {
+      plot.addLineTo([10 + i / 50, sin(i / 100) * 20 + 100]);
+      plot.setAxLimits([i/50, i/50+20], [0, 200]);
+      i++
+      plot.display();
+    }, 10);
 };
 
 function draw() {};
@@ -145,7 +136,7 @@ function makePlot(canvas) {
 
   this.plot = (arr) => {
     if (arr.length == 0) {
-      return null
+      return null;
     };
     axes.context.moveTo(...arr[0]);
     for (let Point in arr) {
