@@ -1,32 +1,28 @@
 let canvas, figure, axes;
 let W = H = 400;
-
+let i;
 function setup() {
   canvas = createCanvas(W, H);
-
   plot = new makePlot(canvas);
   plot.build([0, 0, 300, 300]);
 
   plot.setAxLimits([0, 100], [0, 200]);
-  let i = 0;
+  i = 0;
   canvas.background(250, 0, 0);
-  plot.startLine([10, 100]);
-  while (i++ < 1000) {
-    plot.addLineTo([10 + i / 50, sin(i / 100) * 20 + 100]);
+
+  //Lets make some data
+  let data = [];
+  data.length = 1000;
+  while (i<1000){
+    data[i++] = [10+i/20, sin(i/40)*30+90];
   };
-  plot.display();
-
-
-  setInterval(
-    () => {
-      plot.addLineTo([10 + i / 50, sin(i / 100) * 20 + 100]);
-      plot.setAxLimits([i/50, i/50+20], [0, 200]);
-      i++
-      plot.display();
-    }, 10);
+  plot.plot(data);
 };
 
-function draw() {};
+let fps=60;
+
+function draw() {
+};
 
 
 function makePlot(canvas) {
@@ -45,7 +41,6 @@ function makePlot(canvas) {
   this.build = (bbox) => {
     this.bbox = (arguments.length > 0) ? bbox : [0, 0, 0, 0];
     //Sets bbox for display later
-    // pixelDensity(2); //Glitches in editor
 
     figure = createGraphics(300, 300);
     figure.context = figure.elt.getContext("2d");
@@ -65,9 +60,15 @@ function makePlot(canvas) {
     axes.context.save();
   };
 
+  this.resetTransform = () => {
+    //This function fixes the p5 glitch that causes bad stacking of transformations efficiently! But it limits transformations.
+    let scale = window.pixelDensity();
+    axes.context.setTransform(scale, 0, 0, scale, 0, 0);
+    // figure.context.setTransform(scale, 0, 0, scale, 0, 0);
+    //Officially onle axes is needed. But you never nknow
+  };
+
   this.display = () => {
-    let ctx = canvas.elt.getContext("2d");
-    ctx.save();
 
     this.figure.image(axes,
       this.figure.width / 10,
@@ -79,7 +80,6 @@ function makePlot(canvas) {
       this.bbox[0], this.bbox[1],
       this.bbox[2] - this.bbox[0],
       this.bbox[3] - this.bbox[1]);
-    ctx.restore();
   };
 
   this.setAxLimits = (xlim = [10, 100], ylim = [0, 100]) => {
@@ -87,8 +87,7 @@ function makePlot(canvas) {
     I never had linear algebra so I don't know the terms*/
     let xdist = xlim[1] - xlim[0];
     let ydist = ylim[1] - ylim[0];
-    axes.context.restore();
-    axes.context.save();
+    this.resetTransform();
     axes.context.scale(axes.width / xdist, -axes.height / ydist);
     axes.context.translate(-xlim[0], -ydist);
 
@@ -104,14 +103,12 @@ function makePlot(canvas) {
 
     //Now we use the OLD lims to resize the current drawing
     //Negative signs are odd because of coordinate system
-    axes.context.save();
     axes.scale(1, -1);
-
     axes.context.drawImage(axes.elt,
       this.xlim[0], -this.ylim[1],
       this.xlim[1] - this.xlim[0],
       this.ylim[1] - this.ylim[0]);
-    axes.context.restore();
+    axes.scale(1, -1);
 
     //We also need to avoid ANNYING connections between old and new lines we draw
     axes.context.beginPath();
@@ -139,9 +136,10 @@ function makePlot(canvas) {
       return null;
     };
     axes.context.moveTo(...arr[0]);
-    for (let Point in arr) {
+    for (Point of arr) {
       axes.context.lineTo(...Point);
     };
     axes.context.stroke();
+    this.display();
   };
 };
