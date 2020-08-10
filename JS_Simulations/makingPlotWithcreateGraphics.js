@@ -1,28 +1,39 @@
 let canvas, figure, axes;
+let H;
 let W = H = 400;
-let i;
+
 function setup() {
   canvas = createCanvas(W, H);
+
   plot = new makePlot(canvas);
   plot.build([0, 0, 300, 300]);
 
-  plot.setAxLimits([0, 100], [0, 200]);
-  i = 0;
+  plot.setAxLimits([0, 200], [0, 200]);
+  let i = 0;
   canvas.background(250, 0, 0);
-
-  //Lets make some data
-  let data = [];
-  data.length = 1000;
-  while (i<1000){
-    data[i++] = [10+i/20, sin(i/40)*30+90];
+  plot.startLine([10, 100]);
+  while (i++ < 1000) {
+    plot.addLineTo([10 + i / 50, sin(i / 100) * 20 + 100]);
+    plot.axes.context.stroke();
   };
-  plot.plot(data);
+
+  plot.setAxLimits([0, 250], [0, 150]);
+  while (i++ < 2000) {
+    // plot.addLineTo([10 + i / 20, sin(i / 20) * 20 + 100]);
+    plot.axes.ellipse(...[10 + i / 10, sin(i / 20) * 20 + 80], .001, .001);
+    plot.axes.context.stroke();
+  };
+  background(0, 0, 255);
+  plot.display();
+  i = 0;
+  setInterval(
+    () => {
+      plot.setAxLimits([i - 100, i++], [0, 150]);
+      plot.display();
+    }, 100);
 };
 
-let fps=60;
-
-function draw() {
-};
+function draw() {};
 
 
 function makePlot(canvas) {
@@ -41,34 +52,26 @@ function makePlot(canvas) {
   this.build = (bbox) => {
     this.bbox = (arguments.length > 0) ? bbox : [0, 0, 0, 0];
     //Sets bbox for display later
+    pixelDensity(2);
 
     figure = createGraphics(300, 300);
+    figure.pixelDensity(window.pixelDensity());
     figure.context = figure.elt.getContext("2d");
     figure.bg = "rgba(0, 0, 0, 1)";
     figure.background(figure.bg);
     this.figure = figure;
 
     axes = createGraphics(500, 500);
+    axes.pixelDensity(window.pixelDensity());
     axes.context = axes.elt.getContext("2d");
     axes.bg = "rgba(255, 0, 0, 1)";
     axes.background(axes.bg);
-    axes.context.imageSmoothingEnabled = false;
-    figure.context.imageSmoothingEnabled = false;
     this.axes = axes;
-
-    figure.context.save();
-    axes.context.save();
-  };
-
-  this.resetTransform = () => {
-    //This function fixes the p5 glitch that causes bad stacking of transformations efficiently! But it limits transformations.
-    let scale = window.pixelDensity();
-    axes.context.setTransform(scale, 0, 0, scale, 0, 0);
-    // figure.context.setTransform(scale, 0, 0, scale, 0, 0);
-    //Officially onle axes is needed. But you never nknow
   };
 
   this.display = () => {
+    let scale = window.pixelDensity();
+    canvas.elt.getContext('2d').setTransform(scale, 0, 0, scale, 0, 0);
 
     this.figure.image(axes,
       this.figure.width / 10,
@@ -87,7 +90,7 @@ function makePlot(canvas) {
     I never had linear algebra so I don't know the terms*/
     let xdist = xlim[1] - xlim[0];
     let ydist = ylim[1] - ylim[0];
-    this.resetTransform();
+    axes.context.setTransform(window.pixelDensity(), 0, 0, window.pixelDensity(), 0, 0);
     axes.context.scale(axes.width / xdist, -axes.height / ydist);
     axes.context.translate(-xlim[0], -ydist);
 
@@ -109,6 +112,7 @@ function makePlot(canvas) {
       this.xlim[1] - this.xlim[0],
       this.ylim[1] - this.ylim[0]);
     axes.scale(1, -1);
+
 
     //We also need to avoid ANNYING connections between old and new lines we draw
     axes.context.beginPath();
@@ -133,13 +137,12 @@ function makePlot(canvas) {
 
   this.plot = (arr) => {
     if (arr.length == 0) {
-      return null;
+      return null
     };
     axes.context.moveTo(...arr[0]);
     for (Point of arr) {
       axes.context.lineTo(...Point);
     };
     axes.context.stroke();
-    this.display();
   };
 };
