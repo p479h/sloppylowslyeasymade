@@ -1,5 +1,4 @@
 let canvas, figure, axes;
-let H;
 let W = H = 400;
 
 function setup() {
@@ -7,6 +6,7 @@ function setup() {
 
   plot = new makePlot(canvas);
   plot.build([0, 0, 300, 300]);
+  plot.axes.context.lineWidth =2;
 
   plot.setAxLimits([0, 200], [0, 200]);
   let i = 0;
@@ -20,7 +20,7 @@ function setup() {
   plot.setAxLimits([0, 250], [0, 150]);
   while (i++ < 2000) {
     // plot.addLineTo([10 + i / 20, sin(i / 20) * 20 + 100]);
-    plot.axes.ellipse(...[10 + i / 10, sin(i / 20) * 20 + 80], .001, .001);
+    plot.axes.ellipse(...[10 + i / 10, sin(i / 20) * 20 + 80], .001, 001);
     plot.axes.context.stroke();
   };
   background(0, 0, 255);
@@ -90,7 +90,7 @@ function makePlot(canvas) {
     I never had linear algebra so I don't know the terms*/
     let xdist = xlim[1] - xlim[0];
     let ydist = ylim[1] - ylim[0];
-    axes.context.setTransform(window.pixelDensity(), 0, 0, window.pixelDensity(), 0, 0);
+    axes.context.setTransform(axes.pixelDensity(), 0, 0, axes.pixelDensity(), 0, 0);
     axes.context.scale(axes.width / xdist, -axes.height / ydist);
     axes.context.translate(-xlim[0], -ydist);
 
