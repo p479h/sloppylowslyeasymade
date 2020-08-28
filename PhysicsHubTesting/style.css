@@ -1,0 +1,495 @@
+/* Note!!!
+Most of this file was taken from PhysicsHub!!!
+I have only created some of the css. */
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,500;0,600;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;900&display=swap');
+html, body {
+  background-color: #222222;
+  margin: 0;
+  font-family: 'Montserrat', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.content{
+    background-color: #222222;
+    position: fixed;
+    display: block;
+    min-height: 100vh;
+    margin-top: 3.5em;
+    padding: 100px;
+    top: 0;
+    left: 0;
+    right: 0px;
+    overflow-x: hidden;
+
+}
+
+.content h1{
+    font-family: 'Rubik', sans-serif;
+    position: relative;
+    color: #ffffff;
+    font-size: 44px;
+    line-height: 1;
+    font-weight: 600;
+    margin-top: 10%;
+    margin-bottom: 3%;
+    text-align: center;
+}
+
+.content p{
+    position: relative;
+    color: #e9e9e9;
+    margin-bottom: 5%;
+    text-align: center;
+    font-size: 20px;
+    line-height: 1.5;
+}
+
+
+.navbar{
+    background-color: #151515;
+}
+
+.navbar a{
+    color: #fff;
+}
+
+.navbar a:hover{
+    -webkit-transform: scale(1.05);
+    transform: scale(1.05);
+    color: #f2f2fc;
+}
+
+.explanation{
+  display: flex;
+  flex-direction: column;
+  padding-left: 14em;
+  padding-right: 14em;
+}
+svg{
+  margin: 1em;
+}
+
+svg:hover>.circles>.purpleCircle:nth-child(1){
+  animation-name: circleAnimationLeft;
+  animation-fill-mode: forwards;
+  animation-duration: 9s;
+  transform: translate(25%, 50%);
+}
+svg:hover>.circles>.purpleCircle:nth-child(2){
+  animation-name: circleAnimationRight;
+  animation-fill-mode: forwards;
+  animation-duration: 9s;
+  transform: translate(75%, 50%);
+}
+svg:hover>.rotatingCircles>.purpleCircle:nth-child(1){
+  animation-name: rotatingCircleAnimationLeft;
+  animation-fill-mode: forwards;
+  animation-duration: 10s;
+  transform: translate(25%, 50%);
+}
+svg:hover>.rotatingCircles>.purpleCircle:nth-child(2){
+  animation-name: rotatingCircleAnimationRight;
+  animation-fill-mode: forwards;
+  animation-duration: 10s;
+  transform: translate(75%, 50%);
+}
+svg:hover>.lines>.horizontalLine{
+  animation-name: horizontalLineAnimation;
+  animation-duration: 4s;
+  animation-fill-mode: repeat;
+  stroke-width: 1;
+  cursor: context-menu;
+  stroke: "none";
+}
+svg:hover>.lines>.verticalLine{
+  animation-name: verticalLineAnimation;
+  animation-duration: 4s;
+  animation-fill-mode: repeat;
+  stroke-width: 1;
+  stroke: "gray";
+  cursor: context-menu;
+}
+
+svg:hover>.arrows>.leftArrowHead, svg:hover>.arrows>.leftArrowTail{
+  animation-name: leftArrowAnimation;
+  animation-duration: 4s;
+  animation-delay: 4s;
+  animation-fill-mode: repeat;
+  animation-timing-function: linear;
+}
+
+svg:hover>.arrows>.rightArrowHead, svg:hover>.arrows>.rightArrowTail{
+  animation-name: rightArrowAnimation;
+  animation-duration: 4s;
+  animation-delay: 4s;
+  animation-fill-mode: repeat;
+  animation-timing-function: linear;
+}
+
+svg:hover>.rotatingArrows>.leftArrowHead, svg:hover>.rotatingArrows>.leftArrowTail{
+  animation-name: rotatingLeftArrowAnimation;
+  animation-duration: 10s;
+  animation-delay: 0s;
+  animation-fill-mode: forwards;
+  animation-timing-function: linear;
+}
+
+svg:hover>.rotatingArrows>.rightArrowHead, svg:hover>.rotatingArrows>.rightArrowTail{
+  animation-name: rotatingRightArrowAnimation;
+  animation-duration: 10s;
+  animation-delay: 0s;
+  animation-fill-mode: forwards;
+  animation-timing-function: linear;
+}
+
+svg:hover>.mathText{
+  animation-name: mathTextAnimation;
+  animation-duration: 3s;
+  animation-fill-mode: forwards;
+  animation-timing-function: linear;
+  animation-delay: 5s;
+  cursor: context-menu;
+}
+
+svg:hover>.rotatingArrows>.mathText{
+  animation-name: rotatingMathTextAnimation;
+  animation-duration: 5s;
+  animation-fill-mode: forwards;
+  animation-timing-function: linear;
+  animation-delay: 3s;
+  cursor: context-menu;
+}
+
+svg:hover>.staticMathText>.mathText{
+  animation-name: staticMathTextAnimation;
+  animation-duration: 5s;
+  animation-fill-mode: forwards;
+  animation-timing-function: linear;
+  animation-delay: 3s;
+  cursor: context-menu;
+}
+
+.purpleCircle:nth-child(1){
+  transform: translate(25%, 50%);
+  fill: cornflowerblue;
+  stroke: lightblue;
+}
+.purpleCircle:nth-child(2){
+  transform: translate(75%,50%);
+  fill: cornflowerblue;
+  stroke: lightblue;
+}
+.rotatingCircles .purpleCircle{
+  transform-origin: 50% 50%;
+}
+
+
+.movableCircles>circle:hover{
+  cursor: grab;
+  fill: lightblue;
+}
+.movableCircles>circle:active{
+  cursor: grabbing;
+  fill: blue;
+}
+.lines>.horizontalLine:nth-child(1) { animation-delay: .2s }
+.lines>.horizontalLine:nth-child(2) { animation-delay: .4s }
+.lines>.horizontalLine:nth-child(3) { animation-delay: .6s }
+.lines>.horizontalLine:nth-child(4) { animation-delay: .8s }
+.lines>.horizontalLine:nth-child(5) { animation-delay: 1s }
+.lines>.verticalLine:nth-child(6) { animation-delay: .1s }
+.lines>.verticalLine:nth-child(7) { animation-delay: .2s }
+.lines>.verticalLine:nth-child(8) { animation-delay: .3s }
+.lines>.verticalLine:nth-child(9) { animation-delay: .4s }
+.lines>.verticalLine:nth-child(10) { animation-delay: .5s }
+.lines>.verticalLine:nth-child(11) { animation-delay: .6s }
+.lines>.verticalLine:nth-child(12) { animation-delay: .7s }
+.lines>.verticalLine:nth-child(13) { animation-delay: .8s }
+.lines>.verticalLine:nth-child(14) { animation-delay: .9s }
+.lines>.verticalLine:nth-child(15) { animation-delay: 1s }
+
+.verticalLine, .horizontalLine, .rotatingHorizontalLine, .rotatingVerticalLine{
+  stroke: gray;
+}
+.leftArrowHead, .rightArrowHead, .leftArrowTail, .rightArrowTail{
+  fill: black;
+  stroke: white;
+  opacity: 0;
+}
+
+.rotatingArrows>.leftArrowHead, .rotatingArrows>.rightArrowHead,
+.rotatingArrows>.leftArrowTail, .rotatingArrows>.rightArrowTail,
+.rotatingArrows>.mathText{
+  transform-origin: 50% 50%;
+}
+
+.mathText{
+  fill: white;
+  font: 15px Consolas;
+  transform: translate(48.5%, 50%);
+  opacity: 0;
+  cursor: context-menu;
+}
+.staticMathText .mathText{
+  transform: none;
+}
+
+#coolsvg .distanceArrowSVG{
+  transform: translate(50%, 50%) scale(0.1, 1) translate(-50px,-10px);
+  opacity: 0;
+  transition: 2s;
+  transition-delay: 0s;
+}
+#coolsvg:hover .distanceArrowSVG{
+  opacity: 1;
+  transform: translate(50%, 50%) scale(2, 2) translate(-50px,-10px);
+  transition-delay: 5s;
+}
+
+
+#pythagoreanCanvas{
+  background-color: black;
+  broder: .1em solid gray;
+  height: 200px;
+  width: 400px;
+}
+#trigonometricSVG:hover>.forceArrows>polygon:nth-child(1){
+  transform: translate(250px, 150px) rotate(-90deg) scale(.45, 1) translate(-50px,-150px);
+}
+#trigonometricSVG:hover>.forceArrows>polygon:nth-child(2){
+  transform: translate(50px, 150px) scale(1, 1) translate(-50px,-150px);
+}
+
+#trigonometricSVG:hover>.forceArrows>polygon:nth-child(3){
+  transform: translate(120px, 140px) rotate(-60.5deg) scale(0.5, 0.5) translate(-50px,-150px);
+  opacity: 0;
+}
+
+
+#forceText>#fade{
+  opacity: 1;
+}
+#forceText>#unfade{
+  opacity: 0;
+}
+#forceText>*{
+  transform: translate(10px,20px);
+  transition: opacity 1s;
+}
+#forceText>.mathText:nth-child(3),#forceText>.mathText:nth-child(4){
+  transform: translate(20px,120px) rotate(-25deg) translate(10px,0px);
+  transition: opacity 1s;
+}
+#trigonometricSVG:hover>#forceText>#fade{
+  opacity: 0 !important;
+}
+#trigonometricSVG:hover>#forceText>#unfade{
+  opacity: 1;
+}
+
+#massThatDisapears{
+  opacity: 1;
+  transition: 2s;
+  transform: translate(12%, 30%) !important;
+}
+svg:hover>.staticMathText>#massThatDisapears{
+  opacity: 0;
+}
+
+
+.movableCirclesText>.mathText{
+  opacity: 1;
+  fill: white;
+  transform: none;
+  animation-name: none;
+}
+.forceArrows>polygon:nth-child(1){
+  transform: translate(250px, 150px) rotate(-90deg) scale(.45, 0) translate(-50px,-150px);
+  stroke-width: 1.5;
+  transition: 1s;
+}
+.forceArrows>polygon:nth-child(2){
+  transform: translate(50px, 150px) scale(0, 1) translate(-50px,-150px);
+  stroke-width: 1.5;
+  transition: 1s;
+}
+.forceArrows>polygon:nth-child(3){
+  transform: translate(50px, 150px) rotate(-26.5deg) scale(1.05, 1) translate(-50px,-150px);
+  stroke-width: 1.5;
+  opacity: 1;
+  transition: 1s;
+}
+
+@keyframes circleAnimationLeft {
+  0% {fill: cornflowerblue}
+  15% {transform: translate(25%, 50%); fill: cornflowerblue}
+  20% {transform: translate(25%, 50%); fill: cornflowerblue}
+  30% {stroke: lightblue;fill: white;transform: translate(25%, 50%);}
+  50% {stroke: lightblue ;fill: white ;transform: translate(25%, 50%) scale(.2);opacity: 1}
+  90% {stroke: lightblue;fill: white ;transform: translate(25%, 50%) scale(.2); opacity: .2;}
+  100% {stroke: lightblue;fill: white ;transform: translate(25%, 50%) scale(1); opacity: 0;}
+}
+
+@keyframes circleAnimationRight {
+  0% {fill: cornflowerblue}
+  15% {transform:translate(75%, 50%); fill: cornflowerblue}
+  20% {transform:translate(75%, 50%); fill: cornflowerblue}
+  30% {stroke: lightblue;fill: white; transform: translate(75%, 50%);}
+  50% {stroke: lightblue;fill: white ;transform: translate(75%, 50%) scale(.2);opacity: 1}
+  90% {stroke: lightblue;fill: white ;transform: translate(75%, 50%) scale(.2); opacity: 0.2;}
+  100% {stroke: lightblue;fill: white ;transform: translate(75%, 50%) scale(1); opacity: 0;}
+}
+
+@keyframes rotatingCircleAnimationLeft{
+  0%{transform: translate(25%, 50%)}
+  10%{transform: rotate(0deg) translate(-25%, 0%) scale(.1) translate(50%, 50%); fill: white;}
+  30%{transform: rotate(-45deg) translate(-25%, 0%) scale(.1) translate(50%, 50%); fill: white;}
+  60%{transform: rotate(-45deg) translate(-25%, 0%) scale(.1) translate(50%, 50%); fill: white;}
+  100%{transform: rotate(0deg) translate(-25%, 0%) scale(1) translate(50%, 50%); fill: cornflowerblue;}
+}
+
+@keyframes rotatingCircleAnimationRight{
+  0%{transform: translate(25%, 0%) scale(1) translate(50%, 50%)}
+  10%{transform: rotate(0deg) translate(25%, 0%) scale(.1) translate(50%, 50%); fill: white;}
+  30%{transform: rotate(-45deg) translate(25%, 0%) scale(.1) translate(50%, 50%); fill: white;}
+  60%{transform: rotate(-45deg) translate(25%, 0%) scale(.1) translate(50%, 50%); fill: white;}
+  100%{transform: rotate(0deg) translate(25%, 0%) scale(1) translate(50%, 50%); fill: cornflowerblue;}
+}
+
+@keyframes horizontalLineAnimation {
+  0% {transform: translateX(0%) rotateZ(180deg); stroke: rgba(255, 255, 255, 0);}
+  25% {transform: translateX(100%) ; stroke: rgba(255, 255, 255, .5);}
+  65% {transform: translateX(100%); stroke: rgba(255, 255, 255, 1);}
+  100% {transform: translateX(0%); stroke: rgba(255, 255, 255, 1);}
+}
+@keyframes verticalLineAnimation {
+  0% {transform: translateY(0%) rotateZ(180deg); stroke: rgba(255, 255, 255, 0);}
+  25% {transform: translateY(100%); stroke: rgba(255, 255, 255, .5);}
+  75% {transform: translateY(100%); stroke: rgba(255, 255, 255, 1);}
+  100% {transform: translateY(0%); stroke: rgba(255, 255, 255, 1);}
+}
+
+@keyframes leftArrowAnimation {
+  0% {transform: translate(47.5%, 50%) scale(-.1, 1);opacity:0;}
+  25% {transform: translate(37.5%, 50%) scale(-.5, 1);opacity:1;}
+  50% {transform: translate(27.5%, 50%) scale(-1, 1); opacity:1;}
+  70% {transform: translate(27.5%, 50%) scale(-1, 1);opacity:1;}
+  100% {transform: translate(27.5%, 50%) scale(-1, 1); opacity:0;}
+}
+@keyframes rightArrowAnimation {
+  0% {transform: translate(52.5%, 50%) scale(.1, 1); opacity:0;}
+  25% {transform: translate(62.5%, 50%) scale(.5, 1); opacity:1;}
+  50% {transform: translate(72.5%, 50%) scale(1, 1); opacity:1;}
+  70% {transform: translate(72.5%, 50%) scale(1, 1); opacity:1;}
+  100% {transform: translate(72.5%, 50%) scale(1, 1); opacity:0;}
+}
+
+@keyframes rotatingLeftArrowAnimation {
+  0% {transform: translate(-2.5%, 0%) scale(0, 1) translate(50%, 50%);opacity:0;}
+  10% {transform: rotate(0deg) translate(-12.5%, 0%) scale(0, 1) translate(50%, 50%);opacity:1;}
+  30% {transform: rotate(-45deg) translate(-22.5%, 0%) scale(-0, 1) translate(50%, 50%);opacity:1;}
+  40% {transform: rotate(-45deg) translate(-22.5%, 0%) scale(-1, 1) translate(50%, 50%);opacity:1;}
+  60% {transform: rotate(-45deg) translate(-22.5%, 0%) scale(-1, 1) translate(50%, 50%); opacity:1;}
+  70% {transform: rotate(0deg) translate(-22.5%, 0%) scale(0, 1) translate(50%, 50%); opacity:0;}
+  100% {transform: translate(-22.5%, 0%) scale(0, 1) translate(50%, 50%); opacity:0;}
+}
+
+@keyframes rotatingRightArrowAnimation {
+  0% {transform: translate(2.5%, 0%) scale(0, 1) translate(50%, 50%);opacity:0;}
+  10% {transform: rotate(0deg) translate(12.5%, 0%) scale(0, 1) translate(50%, 50%);opacity:1;}
+  30% {transform: rotate(-45deg) translate(22.5%, 0%) scale(0, 1) translate(50%, 50%);opacity:1;}
+  40% {transform: rotate(-45deg) translate(22.5%, 0%) scale(1, 1) translate(50%, 50%);opacity:1;}
+  60% {transform: rotate(-45deg) translate(22.5%, 0%) scale(1, 1) translate(50%, 50%); opacity:1;}
+  70% {transform: rotate(0deg) translate(22.5%, 0%) scale(0, 1) translate(50%, 50%); opacity:0;}
+  100% {transform: translate(22.5%, 0%) scale(0, 1) translate(50%, 50%); opacity:0;}
+}
+
+@keyframes mathTextAnimation{
+  0%{transform: translate(48.5%, 50%); opacity: 0}
+  50%{transform: translate(48.5%, 50%); opacity: 1}
+  100%{transform: translate(48.5%, 50%); opacity: 1}
+}
+
+@keyframes rotatingMathTextAnimation{
+  0%{transform: translate(-1.5%, 0%) rotate(-45deg) translate(50%, 50%); opacity: 0}
+  50%{transform: translate(-1.5%, 0%) rotate(-45deg) translate(50%, 50%); opacity: 1}
+  100%{transform: translate(-1.5%, 0%) rotate(0deg) translate(50%, 50%); opacity: 1}
+}
+
+@keyframes staticMathTextAnimation{
+  0%{}
+  50%{opacity: 1;}
+  100%{opacity: 1;}
+}
+
+#simwrapper{
+    background-color: #151515;
+    position: relative;
+    display: inline-block;
+    border: 4px solid #151515;
+    border-radius: 12px;
+}
+
+.sim_explanation{
+    margin-top: 2.5em;
+    font-size: 20px;
+    font-weight: 150;
+    text-align: justify;
+    font-family: 'Montserrat', sans-serif;
+    color: #e9e9e9;
+}
+
+.qs_main {
+    background-color: #000000;
+    text-align: left;
+    position: absolute;
+    width: 200px;
+    font: 12px sans-serif;
+    box-shadow: none;
+    user-select: none;
+    -webkit-user-select: none;
+    color: #bbbbbb;
+    border: 1px solid #666666;
+  }
+  .qs_content {
+    background-color: #000000;
+    overflow-y: auto;
+  }
+  .qs_title_bar {
+    background-color: #000000;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: pointer;
+    padding: 5px;
+    font-weight: bold;
+    border: none;
+    color: #bbbbbb;
+  }
+  .qs_container {
+    margin: 5px;
+    padding: 5px;
+    background-color: #000000;
+    border: 1px solid #666666;
+    position: relative;
+  }
+  .qs_container_selected {
+    border: 1px solid #cccccc;
+    background-color: #000000;
+  }
+  /*========== range ==========*/
+  .qs_range {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 100%;
+    height: 17px;
+    padding: 0px;
+    margin: 0px;
+    background-color: transparent;
+    border: none;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+  }
