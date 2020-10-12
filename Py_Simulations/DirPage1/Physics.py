@@ -195,6 +195,13 @@ class Physics:
             rings = True if object.ring else rings
         try:
             while self.running:  # Pressing a button will disrupt the play. But not throw errors.
+                for i in np.arange(3):
+                    for object in self.objects:  # update all the velocities
+                        object.calculate_net_acc()
+                        object.update_velocity()
+                    for object in self.objects:  # updates all the positions
+                        object.update_position()
+                    self.t = self.t + self.dt
                 for object in self.objects:  # update all the velocities
                     object.calculate_net_acc()
                     object.update_velocity()

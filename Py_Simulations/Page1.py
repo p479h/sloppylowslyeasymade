@@ -1,14 +1,3 @@
-"""
-    This is the page you go to after you click the planet button.
-    Itself along with page1_1 and page1_2 make up all necessary 
-    requirements for the simulation of planetary motion.
-    
-    Note that this simulation can take "charge" as argument for making
-    the objects in the simulation. But I have not tested that option yet.
-    So if you play around with it and find any issues, please tell me. 
-    I have been making this by myself in quite a hurry. So there are definitely
-    mistakes somewhere.
-    """
 from Pages import Page, IMAGES, Main_page, ImageTk, plt
 from DirPage1.box import make_box_interactive
 from messages import page1messages

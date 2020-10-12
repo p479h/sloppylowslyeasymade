@@ -1,0 +1,3 @@
+file = "Book1.csv"
+with open("Book1.csv", "r") as file:
+    print(file.read())

@@ -16,6 +16,7 @@ from icons.play_icon import play_icon
 from icons.pause_icon import pause_icon
 from icons.cmap_icon import cmap_icon
 
+
 icons = (question_icon, planet_icon, box_icon, time_icon,
          arrow_right, arrow_left, spring_icon, magnifying_icon,
          record_icon, star_icon, replay_icon,play_icon, pause_icon,

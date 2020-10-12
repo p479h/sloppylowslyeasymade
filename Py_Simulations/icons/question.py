@@ -103,3 +103,4 @@ except:
         img = get_img_from_ax(ax, size)
         question_icon = img.copy()
         question_icon.save(r"icons\question_icon.png", "PNG")
+
